@@ -35,5 +35,10 @@ public class ClassTest2 {
 			System.out.println("can not found com.itzhai.test.type.Data3...");
 		}
 		System.out.println(Data3.a);
+		
+		System.out.println(new Circle() instanceof Circle);  // true
+		System.out.println(Shape.class.isInstance(new Circle()));  // true
+		System.out.println((new Circle()).getClass() == Circle.class);  // true
+		System.out.println((new Circle().getClass()).equals(Shape.class));  // false
 	}
 }
