@@ -7,7 +7,9 @@ import java.util.List;
 import com.itzhai.javanote.entity.Circle;
 
 /**
- * 转型和警告
+ * 15 泛型  
+ *   11 问题 
+ *     3 转型和警告
  * 
  * 使用带有泛型类型参数的转型或indtanceof不会有任何效果
  * 

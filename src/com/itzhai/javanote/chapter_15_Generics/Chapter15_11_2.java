@@ -1,6 +1,8 @@
 package com.itzhai.javanote.chapter_15_Generics;
 /**
- * 实现参数化接口
+ * 15 泛型  
+ *   11 问题 
+ *     2 实现参数化接口
  * 
  * 一个类不能实现同一个泛型接口的两种变体，由于擦除的原因，这两个变体会成为相同的接口。
  * @author arthinking

@@ -7,7 +7,9 @@ import java.util.List;
 import com.itzhai.javanote.entity.Circle;
 
 /**
- * 重载
+ * 15 泛型  
+ *   11 问题 
+ *     4 重载
  * 
  * 由于擦除的原因，重载方法将产生相同的类型签名
  * 
