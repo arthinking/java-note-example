@@ -15,7 +15,7 @@ import temp.generics.SimpleQueue;
  * 下面创建一个apply()方法，它能够将任何方法f应用于某个序列seq中的所有对象，通过反射和可变参数args传递方法的参数来实现。
  */
 class Apply {
-    // 必须放置边界和通配符，银边使得Apply和FilledList在所有需要的请下都可以使用，否则，下面的某些Apply和FilledList应用将无法工作。
+    // 必须放置边界和通配符，银边使得Apply和FilledList在所有需要的情况下都可以使用，否则，下面的某些Apply和FilledList应用将无法工作。
     public static <T, S extends Iterable<? extends T>>
         void apply(S seq, Method f, Object... args) {
         try {
