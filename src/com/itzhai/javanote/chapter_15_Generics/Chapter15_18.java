@@ -15,18 +15,20 @@ import java.util.concurrent.atomic.AtomicLong;
  *     
  */
 //Different types of function objects:
+// 运算法则：联合
 interface Combiner<T> { T combine(T x, T y); }
+// 单参函数
 interface UnaryFunction<R,T> { R function(T x); }
+// 收集器
 interface Collector<T> extends UnaryFunction<T,T> {
     T result(); // Extract result of collecting parameter
 }
+// 
 interface UnaryPredicate<T> { boolean test(T x); }
  
 class Functional {
-    // Calls the Combiner object on each element to combine
-    // it with a running result, which is finally returned:
-    public static <T> T
-        reduce(Iterable<T> seq, Combiner<T> combiner) {
+    // 结合seq中的所有对象
+    public static <T> T reduce(Iterable<T> seq, Combiner<T> combiner) {
         Iterator<T> it = seq.iterator();
         if(it.hasNext()) {
             T result = it.next();
@@ -41,16 +43,14 @@ class Functional {
     // the list, ignoring the return value. The function
     // object may act as a collecting parameter, so it is
     // returned at the end.
-    public static <T> Collector<T>
-        forEach(Iterable<T> seq, Collector<T> func) {
+    public static <T> Collector<T> forEach(Iterable<T> seq, Collector<T> func) {
         for(T t : seq)
             func.function(t);
         return func;
     }
     // Creates a list of results by calling a
     // function object for each object in the list:
-    public static <R,T> List<R>
-        transform(Iterable<T> seq, UnaryFunction<R,T> func) {
+    public static <R,T> List<R> transform(Iterable<T> seq, UnaryFunction<R,T> func) {
         List<R> result = new ArrayList<R>();
         for(T t : seq)
             result.add(func.function(t));
@@ -58,8 +58,7 @@ class Functional {
     }
     // Applies a unary predicate to each item in a sequence,
     // and returns a list of items that produced "true":
-    public static <T> List<T>
-        filter(Iterable<T> seq, UnaryPredicate<T> pred) {
+    public static <T> List<T> filter(Iterable<T> seq, UnaryPredicate<T> pred) {
         List<T> result = new ArrayList<T>();
         for(T t : seq)
             if(pred.test(t))
@@ -73,26 +72,22 @@ class Functional {
             return x + y;
         }
     }
-    static class
-    IntegerSubtracter implements Combiner<Integer> {
+    static class IntegerSubtracter implements Combiner<Integer> {
         public Integer combine(Integer x, Integer y) {
             return x - y;
         }
     }
-    static class
-    BigDecimalAdder implements Combiner<BigDecimal> {
+    static class BigDecimalAdder implements Combiner<BigDecimal> {
         public BigDecimal combine(BigDecimal x, BigDecimal y) {
             return x.add(y);
         }
     }
-    static class
-    BigIntegerAdder implements Combiner<BigInteger> {
+    static class BigIntegerAdder implements Combiner<BigInteger> {
         public BigInteger combine(BigInteger x, BigInteger y) {
             return x.add(y);
         }
     }
-    static class
-    AtomicLongAdder implements Combiner<AtomicLong> {
+    static class AtomicLongAdder implements Combiner<AtomicLong> {
         public AtomicLong combine(AtomicLong x, AtomicLong y) {
             // Not clear whether this is meaningful:
             return new AtomicLong(x.addAndGet(y.get()));
@@ -100,22 +95,19 @@ class Functional {
     }
     // We can even make a UnaryFunction with an "ulp"
     // (Units in the last place):
-    static class BigDecimalUlp
-    implements UnaryFunction<BigDecimal,BigDecimal> {
+    static class BigDecimalUlp implements UnaryFunction<BigDecimal,BigDecimal> {
         public BigDecimal function(BigDecimal x) {
             return x.ulp();
         }
     }
-    static class GreaterThan<T extends Comparable<T>>
-    implements UnaryPredicate<T> {
+    static class GreaterThan<T extends Comparable<T>> implements UnaryPredicate<T> {
         private T bound;
         public GreaterThan(T bound) { this.bound = bound; }
         public boolean test(T x) {
             return x.compareTo(bound) > 0;
         }
     }
-    static class MultiplyingIntegerCollector
-        implements Collector<Integer> {
+    static class MultiplyingIntegerCollector implements Collector<Integer> {
         private Integer val = 1;
         public Integer function(Integer x) {
             val *= x;
