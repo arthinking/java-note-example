@@ -14,7 +14,7 @@ import temp.generics.SimpleQueue;
  * 下面的例子中，没有预见到对“Addable”接口的需要，所以我们被限制在Collection继承层次结构之内，即便SimpleQueue有一个add()方法，
  * 它也不能工作。因为这会将代码限制为只能工作于Collection，因此这样的代码不是特别的繁华。有了潜在类型机制，情况就会不同了。
  */
-public class Fill {
+class Fill {
     // 被限制在Collection继承层次结构之内
     public static <T> void fill(Collection<T> collection,
             Class<? extends T> classToken, int size) {

@@ -3,8 +3,6 @@ package com.itzhai.javanote.chapter_15_Generics;
 import java.util.ArrayList;
 import java.util.Random;
 
-import temp.generics.RandomList;
-
 /**
  * 15 泛型  
  *   2 简单泛型

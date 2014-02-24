@@ -1,3 +1,5 @@
+package temp.generics;
+
 //: generics/GenericMethods.java
 
 public class GenericMethods {

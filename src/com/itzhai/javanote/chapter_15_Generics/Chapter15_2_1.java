@@ -1,7 +1,5 @@
 package com.itzhai.javanote.chapter_15_Generics;
 
-import temp.net.mindview.util.TwoTuple;
-
 import com.itzhai.javanote.entity.Circle;
 
 /**
@@ -38,6 +36,18 @@ class ThreeTuple<A,B,C> extends TwoTuple<A,B> {
     }
 }
 
+class FourTuple<A,B,C,D> extends ThreeTuple<A,B,C> {
+    public final D fourth;
+    public FourTuple(A a, B b, C c, D d) {
+      super(a, b, c);
+      fourth = d;
+    }
+    public String toString() {
+      return "(" + first + ", " + second + ", " +
+        third + ", " + fourth + ")";
+    }
+  }
+
 /**
  * 为了使用元组，只需定义长度合适的元组，作为方法的返回值就可以了
  */
@@ -50,13 +60,40 @@ class TupleTest {
         return new ThreeTuple<Circle, String, Integer>(
                 new Circle(), "hi", 47);
     }
+    
+    static FourTuple<Circle,Square,String,Integer> h() {
+      return
+        new FourTuple<Circle,Square,String,Integer>(
+          new Circle(), new Square(), "hi", 47);
+    }
+    static FiveTuple<Circle,Square,String,Integer,Double> k() {
+      return new
+        FiveTuple<Circle,Square,String,Integer,Double>(
+          new Circle(), new Square(), "hi", 47, 11.1);
+    }
+    
     public static void test() {
         TwoTuple<String,Integer> ttsi = f();
+        FourTuple<Circle,Square,String,Integer> ts = h();
         System.out.println(ttsi);
         // ttsi.first = "there"; // Compile error: final
     }
 }
 
+class FiveTuple<A,B,C,D,E> extends FourTuple<A,B,C,D> {
+  public final E fifth;
+  public FiveTuple(A a, B b, C c, D d, E e) {
+    super(a, b, c, d);
+    fifth = e;
+  }
+  public String toString() {
+    return "(" + first + ", " + second + ", " +
+      third + ", " + fourth + ", " + fifth + ")";
+  }
+}
+
 public class Chapter15_2_1 {
-	
+	public static void main(String args){
+	    TupleTest.test();
+	}
 }

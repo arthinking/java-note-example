@@ -6,5 +6,6 @@ package com.itzhai.javanote.chapter_15_Generics;
  * Java中的泛型参考了C++的模板，Java的界限是Java泛型的局限。
  */
 public class Chapter15_1 {
-	
+
 }
+

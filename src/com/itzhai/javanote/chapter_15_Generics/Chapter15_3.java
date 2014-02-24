@@ -19,6 +19,7 @@ import com.itzhai.javanote.entity.Triangle;
 interface Generator<T> { T next(); } ///:~
 
 // 现在我们编写一个类，实现Generator<Shape>接口，能够随机生成不同类型的Coffee对象
+// 实现了Iterable接口，所以可以再循环语句中使用
 class ShapeGenerator implements Generator<Shape>, Iterable<Shape> {
     private Class[] types = { Circle.class, Square.class,
             Triangle.class};
@@ -46,10 +47,14 @@ class ShapeGenerator implements Generator<Shape>, Iterable<Shape> {
         public void remove() { // Not implemented
             throw new UnsupportedOperationException();
         }
-    };    
+    };
+    
+    // 迭代方法
+    @Override
     public Iterator<Shape> iterator() {
         return new ShapeIterator();
     }
+    
     public static void test() {
         ShapeGenerator gen = new ShapeGenerator();
         for(int i = 0; i < 5; i++)
@@ -59,6 +64,49 @@ class ShapeGenerator implements Generator<Shape>, Iterable<Shape> {
     }
 }
 
+// 下面的类是Generator<T>接口的另一个实现，负责生成Fibonacci数列：
+class Fibonacci implements Generator<Integer> {
+    private int count = 0;
+    public Integer next() { return fib(count++); }
+    private int fib(int n) {
+        if(n < 2) return 1;
+        return fib(n-2) + fib(n-1);
+    }
+    public static void test(String[] args) {
+        Fibonacci gen = new Fibonacci();
+        for(int i = 0; i < 18; i++)
+            System.out.print(gen.next() + " ");
+    }
+} 
+/* Output:
+  1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584
+*///:~
+
+// 下面编写一个实现了Iterable的Fibonacci生成器，通过继承来创建适配器类：
+class IterableFibonacci extends Fibonacci implements Iterable<Integer> {
+  private int n;
+  public IterableFibonacci(int count) { n = count; }
+  
+  @Override
+  public Iterator<Integer> iterator() {
+    return new Iterator<Integer>() {
+      public boolean hasNext() { return n > 0; }
+      public Integer next() {
+        n--;
+        return IterableFibonacci.this.next();
+      }
+      public void remove() { // Not implemented
+        throw new UnsupportedOperationException();
+      }
+    };
+  } 
+  public static void test(String[] args) {
+    for(int i : new IterableFibonacci(18))
+      System.out.print(i + " ");
+  }
+} /* Output:
+1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584
+*///:~
 
 public class Chapter15_3 {
 	
