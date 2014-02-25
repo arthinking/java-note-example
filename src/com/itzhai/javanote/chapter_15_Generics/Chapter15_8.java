@@ -3,12 +3,12 @@ package com.itzhai.javanote.chapter_15_Generics;
 /**
  * 15 泛型  
  *   8 擦除的补偿
- * 
+ *  
  * 正因为类型信息被擦除了，所以和类型相关的代码都无法工作了，如下的：
  */
 
 class Erased<T> {
-    private final int SIZE = 100;
+    private static final int SIZE = 100;
     public static void f(Object arg) {
         if(arg instanceof T) {}          // Error
         T var = new T();                 // Error
