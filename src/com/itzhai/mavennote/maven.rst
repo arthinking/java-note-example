@@ -1,25 +1,25 @@
-¶¥¼¶
+é¡¶çº§
 +++++++++++++++++
 
-Ò»¼¶
+ä¸€çº§
 =================
 
-¶ş¼¶
+äºŒçº§
 ---------------------------
 
-Èı¼¶
+ä¸‰çº§
 ~~~~~~~~~~~~~~~~~~
 
-ËÄ¼¶
+å››çº§
 ^^^^^^^^^^^^^^^^^
 
-Í¼Æ¬£º
+å›¾ç‰‡ï¼š
 
 .. image:: http://tengine.taobao.org/book/_images/chapter-2-1.PNG
-    :alt: nginx½ø³ÌÄ£ĞÍ
+    :alt: nginxè¿›ç¨‹æ¨¡å‹
     :align: center
 
-´úÂë£º
+ä»£ç ï¼š
 
 .. code:: c
 
@@ -28,12 +28,12 @@
 	}
 
 
-±í¸ñ£º
+è¡¨æ ¼ï¼š
 
-:data: ÎÄ×Ö
-:data: ÎÄ×Ö
+:data: æ–‡å­—
+:data: æ–‡å­—
 
-list£º
+listï¼š
 
 - server
 - auth_http
@@ -49,7 +49,7 @@ list£º
  * Training Guides
 
 
-Á´½Ó£º
+é“¾æ¥ï¼š
 
 `Apache Maven <http://maven.apache.org/>`_
 
@@ -58,11 +58,11 @@ list£º
  * ``tox -e checkdeletions`` - to check that no deleted files are referenced
  * ``tox -e checkbuild`` - to actually build the manual
  
-¼Ó·½¿òµÄÎÄ×Ö
+åŠ æ–¹æ¡†çš„æ–‡å­—
 
    https://bugs.launchpad.net/openstack-manuals
    
-   ÖĞ¹ú¼¸Ê®¿é¸½½üÁ¢¿Ì Á¢¿Ì½ğ¿ÀÀ¬À¥ÂØ¾µÁ¢¿ÌÁ¢¿Ì¿¼ÂÇ¿¨ÁËÁ¢¿Ì£»°¡¿¨Á¢¿Ì  jkl kl j 
-   ½Ó¿ÚÁËÀ¥ÂØ¾µÊıÁ¿
+   ä¸­å›½å‡ åå—é™„è¿‘ç«‹åˆ» ç«‹åˆ»é‡‘å·åƒæ˜†ä»‘é•œç«‹åˆ»ç«‹åˆ»è€ƒè™‘å¡äº†ç«‹åˆ»ï¼›å•Šå¡ç«‹åˆ»  jkl kl j 
+   æ¥å£äº†æ˜†ä»‘é•œæ•°é‡
    
-Ëõ½øÇø¿é£¬×Ô¶¯¼ÓÁ´½Ó
+ç¼©è¿›åŒºå—ï¼Œè‡ªåŠ¨åŠ é“¾æ¥
