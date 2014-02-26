@@ -22,9 +22,10 @@
 ´úÂë£º
 
 .. code:: c
-public static void main(String[] args){
 
-}
+	public static void main(String[] args){
+	
+	}
 
 
 ±í¸ñ£º
