@@ -3,9 +3,6 @@ package com.itzhai.javanote.chapter_15_Generics;
 import java.util.ArrayList;
 import java.util.List;
 
-import temp.generics.Apple;
-import temp.generics.Fruit;
-
 
 /**
  * 15 泛型  
