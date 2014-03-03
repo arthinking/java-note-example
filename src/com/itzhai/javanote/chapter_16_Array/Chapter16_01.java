@@ -24,12 +24,6 @@ import java.util.List;
  * 
  * 下面的例子将数组与泛型容器进行比较：
  */
-class BerylliumSphere {
-	private static long counter;
-	private final long id = counter++;
-	public String toString() { return "Sphere " + id; }
-}
-
 class ContainerComparison {
 	public static void main(String[] args) {
 		BerylliumSphere[] spheres = new BerylliumSphere[10];
