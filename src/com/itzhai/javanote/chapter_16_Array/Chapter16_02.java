@@ -1,6 +1,6 @@
 package com.itzhai.javanote.chapter_16_Array;
 
-import static com.itzhai.javanote.util.StringUtils.print;
+import static com.itzhai.javanote.util.StringUtils.*;
 import java.util.Arrays;
 
 /**
