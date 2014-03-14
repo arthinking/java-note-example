@@ -1,0 +1,1225 @@
+1、数组为什么特殊
+================
+ 
+数组与其他种类容器之间的区别：效率，类型和保存基本类型的能力。
+
+数组是一种效率最高的存储和随机访问对象引用序列的方式。
+
+>>ul:
+>>li:优点：元素访问非常快
+>>li:缺点：为这种速度所付出的的代价是数组对象的大小固定，并且在其生命周期中不可改变。
+:ul<<
+
+与ArrayList对比：ArrayList的弹性分配空间需要开销，效率低很多。
+
+与泛型前的容器相比，数组可以持有某种具体类型，这样就可以使用编译器检查防止插入错误类型和抽取不恰当类型。也就是数组可以持有基本类型，而泛型之前的容器则不能。有了泛型：容器则可以检查它们所持有对象的类型，并且有了自动包装机制，容器还能够持有基本类型。
+
+下面的例子将数组与泛型容器进行比较：
+
+>>::
+class ContainerComparison {
+	public static void main(String[] args) {
+		BerylliumSphere[] spheres = new BerylliumSphere[10];
+	    for(int i = 0; i < 5; i++)
+	    	spheres[i] = new BerylliumSphere();
+	    System.out.println(Arrays.toString(spheres));
+	    // 数组使用[]来访问元素
+	    System.out.println(spheres[4]);
+
+	    List<BerylliumSphere> sphereList =
+	    		new ArrayList<BerylliumSphere>();
+	    for(int i = 0; i < 5; i++)
+	    	// List使用add()和get()来访问元素
+	    	sphereList.add(new BerylliumSphere());
+	    System.out.println(sphereList);
+	    System.out.println(sphereList.get(4));
+
+	    int[] integers = { 0, 1, 2, 3, 4, 5 };
+	    System.out.println(Arrays.toString(integers));
+	    System.out.println(integers[4]);
+
+	    List<Integer> intList = new ArrayList<Integer>(
+	    		Arrays.asList(0, 1, 2, 3, 4, 5));
+	    intList.add(97);
+	    System.out.println(intList);
+	    System.out.println(intList.get(4));
+	}
+}
+/* Output:
+	[Sphere 0, Sphere 1, Sphere 2, Sphere 3, Sphere 4, null, null, null, null, null]
+	Sphere 4
+	[Sphere 5, Sphere 6, Sphere 7, Sphere 8, Sphere 9]
+	Sphere 9
+	[0, 1, 2, 3, 4, 5]
+	4
+	[0, 1, 2, 3, 4, 5, 97]
+	4
+	*///:~
+::<<
+
+
+随着容器的出现，数组说过仅存的有点就是效率，如果要解决更一般化的问题，数组可能会受到过多的限制，因此在这些情况下你还是会使用容器。
+
+
+
+2、数组是第一级对象
+==================
+  
+数组标示符其实是一个 引用，指向堆中创建的一个真实对象，可以作为数组初始化语法的一部分隐式的创建此对象，或者用new表达式显示的创建。
+
+只读成员length是唯一一个可以访问的字段或方法
+
+[]是访问数组对象的唯一方式
+
+对象数组和基本类型数组在使用上几乎是相同的，唯一区别是对象数组保存的是引用，基本类型数组直接保存基本类型。
+
+下面总结了初始化数组的各种方法：
+
+>>::
+class ArrayOptions {
+	public static void main(String[] args) {
+	    // a是尚未初始化的局部变量，编译器不允许用此引用做任何事情
+	    BerylliumSphere[] a; 
+	    // 初始化为指向一个BerylliumSphere引用的数组，实际上并没有BerylliumSphere对象置入数组中
+	    BerylliumSphere[] b = new BerylliumSphere[5];
+	    // 所有引用初始化为null，数值型会初始化为0，字符型初始化为" "，布尔型初始化为false
+	    print("b: " + Arrays.toString(b));
+	    char[] cc = new char[5];
+	    print("cc" + Arrays.toString(cc));
+	    // 初始化为指向一个BerylliumSphere引用的数组并给每个元素赋值
+	    BerylliumSphere[] c = new BerylliumSphere[4];
+	    for(int i = 0; i < c.length; i++)
+	    	if(c[i] == null) // Can test for null reference
+	    		c[i] = new BerylliumSphere();
+	    // 聚集初始化语法创建数组对象：隐式的使用new语法在堆中创建(Aggregate initialization):
+	    BerylliumSphere[] d = { new BerylliumSphere(),
+	    		new BerylliumSphere(), new BerylliumSphere()
+	    };
+	    // 动态聚集初始化语法创建数组对象：(Dynamic aggregate initialization):
+	    a = new BerylliumSphere[]{
+	    		new BerylliumSphere(), new BerylliumSphere(),
+	    };
+	    // (Trailing comma is optional in both cases)
+	    print("a.length = " + a.length);
+	    print("b.length = " + b.length);
+	    print("c.length = " + c.length);
+	    print("d.length = " + d.length);
+	    a = d;
+	    print("a.length = " + a.length);
+
+	    // 下面是基本类型数组的初始化，与对象引用类型基本一样，只是直接保存了数值
+	    // Arrays of primitives:
+	    int[] e; // Null reference
+	    int[] f = new int[5];
+	    // The primitives inside the array are
+	    // automatically initialized to zero:
+	    print("f: " + Arrays.toString(f));
+	    int[] g = new int[4];
+	    for(int i = 0; i < g.length; i++)
+	    	g[i] = i*i;
+	    int[] h = { 11, 47, 93 };
+	    // Compile error: variable e not initialized:
+	    //!print("e.length = " + e.length);
+	    print("f.length = " + f.length);
+	    print("g.length = " + g.length);
+	    print("h.length = " + h.length);
+	    e = h;
+	    print("e.length = " + e.length);
+	    e = new int[]{ 1, 2 };
+	    print("e.length = " + e.length);
+	}
+} /* Output:
+	b: [null, null, null, null, null]
+	cc[ ,  ,  ,  ,   ]
+	a.length = 2
+	b.length = 5
+	c.length = 4
+	d.length = 3
+	a.length = 3
+	f: [0, 0, 0, 0, 0]
+	f.length = 5
+	g.length = 4
+	h.length = 3
+	e.length = 3
+	e.length = 2
+	*///:~
+::<<
+
+
+3、返回一个数组
+==============
+
+C或者C++中不能返回一个数组，而只能返回一个指向数组的指针，真会早恒一些问题，使得控制数组的生命周期变得很困难，并且容易造成内存泄露。
+
+Java中，只需要直接返回一个数组即可：
+
+>>::
+class IceCream {
+    private static Random rand = new Random(47);
+    static final String[] FLAVORS = {
+      "Chocolate", "Strawberry", "Vanilla Fudge Swirl",
+      "Mint Chip", "Mocha Almond Fudge", "Rum Raisin",
+      "Praline Cream", "Mud Pie"
+    };
+    // 创建了一个名为results的String数组
+    public static String[] flavorSet(int n) {
+      if(n > FLAVORS.length)
+        throw new IllegalArgumentException("Set too big");
+      String[] results = new String[n];
+      // picked数组用来确保生成的元素不会重复，用boolean标示是否已存在
+      boolean[] picked = new boolean[FLAVORS.length];
+      for(int i = 0; i < n; i++) {
+        int t;
+        do
+          t = rand.nextInt(FLAVORS.length);
+        while(picked[t]);
+        results[i] = FLAVORS[t];
+        picked[t] = true;
+      }
+      return results;
+    }
+    public static void main(String[] args) {
+      for(int i = 0; i < 7; i++)
+        System.out.println(Arrays.toString(flavorSet(3)));
+    }
+} /* Output:
+  [Rum Raisin, Mint Chip, Mocha Almond Fudge]
+  [Chocolate, Strawberry, Mocha Almond Fudge]
+  [Strawberry, Mint Chip, Mocha Almond Fudge]
+  [Rum Raisin, Vanilla Fudge Swirl, Mud Pie]
+  [Vanilla Fudge Swirl, Chocolate, Mocha Almond Fudge]
+  [Praline Cream, Strawberry, Mocha Almond Fudge]
+  [Mocha Almond Fudge, Strawberry, Mint Chip]
+  *///:~
+public class Chapter16_03 {
+
+}
+::<<
+
+
+
+4、多维数组
+==========
+
+使用花括号创建多维数组，每对花括号括起来的集合都会把你带到下一级数组：
+
+>>::
+class MultidimensionalPrimitiveArray {
+	public static void main(String[] args) {
+	    int[][] a = {
+	    	{ 1, 2, 3, },
+	    	{ 4, 5, 6, },
+	    };
+	    System.out.println(Arrays.deepToString(a));
+	}
+} /* Output:
+	[[1, 2, 3], [4, 5, 6]]
+	*///:~
+::<<
+
+
+使用Arrays.deepToString()将多维数组转换为多个String
+
+>>::
+class ThreeDWithNew {
+	public static void main(String[] args) {
+	    // 3-D array with fixed length:
+		// 使用new创建多维数组
+	    int[][][] a = new int[2][2][4];
+	    System.out.println(Arrays.deepToString(a));
+	}
+} /* Output:
+	[[[0, 0, 0, 0], [0, 0, 0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0]]]
+	*///:~
+::<<
+
+
+粗糙数组：数组中构成矩阵的每个向量都可以具有任意的长度
+
+>>::
+class RaggedArray {
+	public static void main(String[] args) {
+	    Random rand = new Random(47);
+	    // 3-D array with varied-length vectors:
+	    int[][][] a = new int[rand.nextInt(7)][][];
+	    for(int i = 0; i < a.length; i++) {
+	    	a[i] = new int[rand.nextInt(5)][];
+	    	for(int j = 0; j < a[i].length; j++)
+	    		a[i][j] = new int[rand.nextInt(5)];
+	    }
+	    System.out.println(Arrays.deepToString(a));
+	}
+} /* Output:
+	[[], [[0], [0], [0, 0, 0, 0]], [[], [0, 0], [0, 0]], [[0, 0, 0], [0], [0, 0, 0, 0]], [[0, 0, 0], [0, 0, 0], [0], []], [[0], [], [0]]]
+	*///:~
+::<<
+
+
+可以用类似的方式处理非基本类型的对象数组，下面使用花括号的方式创建：
+
+>>::
+class MultidimensionalObjectArrays {
+	public static void main(String[] args) {
+		BerylliumSphere[][] spheres = {
+	      { new BerylliumSphere(), new BerylliumSphere() },
+	      { new BerylliumSphere(), new BerylliumSphere(),
+	        new BerylliumSphere(), new BerylliumSphere() },
+	      { new BerylliumSphere(), new BerylliumSphere(),
+	        new BerylliumSphere(), new BerylliumSphere(),
+	        new BerylliumSphere(), new BerylliumSphere(),
+	        new BerylliumSphere(), new BerylliumSphere() },
+	    };
+	    System.out.println(Arrays.deepToString(spheres));
+	}
+} /* Output:
+	[[Sphere 0, Sphere 1], [Sphere 2, Sphere 3, Sphere 4, Sphere 5], [Sphere 6, Sphere 7, Sphere 8, Sphere 9, Sphere 10, Sphere 11, Sphere 12, Sphere 13]]
+	*///:~
+::<<
+
+
+自动包装机制对数组初始化器也起作用
+>>::
+class AutoboxingArrays {
+	public static void main(String[] args) {
+	    Integer[][] a = { // Autoboxing:
+	    	{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 },
+	    	{ 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 },
+	    	{ 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 },
+	    	{ 71, 72, 73, 74, 75, 76, 77, 78, 79, 80 },
+	    };
+	    System.out.println(Arrays.deepToString(a));
+	}
+} /* Output:
+	[[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [21, 22, 23, 24, 25, 26, 27, 28, 29, 30], [51, 52, 53, 54, 55, 56, 57, 58, 59, 60], [71, 72, 73, 74, 75, 76, 77, 78, 79, 80]]
+	*///:~
+::<<
+
+
+也可以逐个地，部分的构建一个非基本类型的对象数组：
+
+>>::
+class AssemblingMultidimensionalArrays {
+	public static void main(String[] args) {
+	    Integer[][] a;
+	    a = new Integer[3][];
+	    for(int i = 0; i < a.length; i++) {
+	      a[i] = new Integer[3];
+	      for(int j = 0; j < a[i].length; j++)
+	        a[i][j] = i * j; // Autoboxing
+	    }
+	    System.out.println(Arrays.deepToString(a));
+	}
+} /* Output:
+	[[0, 0, 0], [0, 1, 2], [0, 2, 4]]
+	*///:~
+::<<
+
+Arrays.deepToString()方法对基本类型数组和对象数组都起到了作用
+
+
+5、数组与泛型
+============
+
+通常，数组与泛型不能很好结合，你不能实例化具有参数化类型的数组
+ 
+擦除会移除参数类型信息，而数组必须知道它们所持有的确切类型，以强制保证类型安全。
+
+但是，你可以参数化数组本身的类型：
+
+>>::
+class ClassParameter<T> {
+	public T[] f(T[] arg) { return arg; }
+}
+
+class MethodParameter {
+	public static <T> T[] f(T[] arg) { return arg; }
+}
+
+class ParameterizedArrayType {
+	public static void main(String[] args) {
+		Integer[] ints = { 1, 2, 3, 4, 5 };
+	    Double[] doubles = { 1.1, 2.2, 3.3, 4.4, 5.5 };
+	    // 编译器不能让你实例化泛型数组，但是，允许你创建对这种数组的引用：
+	    Integer[] ints2 = new ClassParameter<Integer>().f(ints);
+	    Double[] doubles2 = new ClassParameter<Double>().f(doubles);
+	    ints2 = MethodParameter.f(ints);
+	    doubles2 = MethodParameter.f(doubles);
+	}
+} ///:~
+::<<
+
+
+尽管不能创建实际的持有泛型的数组，但是你可以创建非泛型的数组，然后将其转型：
+
+>>::
+class ArrayOfGenerics {
+	@SuppressWarnings("unchecked")
+	public static void main(String[] args) {
+		List<String>[] ls;
+		List[] la = new List[10];
+		// 创建非泛型的数组并将其转型（成功创建泛型数组的唯一方法就是创建一个被擦除类型的新数组，然后对其转型）
+		ls = (List<String>[])la; // "Unchecked" warning
+		ls[0] = new ArrayList<String>();
+		// 不能直接创建泛型数组
+		// Compile-time checking produces an error:
+		//! ls[1] = new ArrayList<Integer>();
+
+		// Object数组可以引用泛型类型
+		// The problem: List<String> is a subtype of Object
+		Object[] objects = ls; // So assignment is OK
+		// Compiles and runs without complaint:
+		objects[1] = new ArrayList<Integer>();
+
+		// 如果想直接点，可以创建一个这样创建，不过会有一个"unchecked"警告
+		// However, if your needs are straightforward it is
+		// possible to create an array of generics, albeit
+		// with an "unchecked" warning:
+		List<Integer>[] spheres = (List<Integer>[])new List[10];
+		for(int i = 0; i < spheres.length; i++)
+			spheres[i] = new ArrayList<Integer>();
+	}
+} ///:~
+::<<
+
+
+一般而言，泛型在类或方法的边界处很有效，而在类或方法的内部，擦出会使得泛型变得不适用，例如，你不能创建泛型数组：
+
+>>::
+class ArrayOfGenericType<T> {
+	T[] array; // OK
+	@SuppressWarnings("unchecked")
+	public ArrayOfGenericType(int size) {
+		// 非法！
+	    //! array = new T[size];
+	    array = (T[])new Object[size]; // "unchecked" Warning
+	}
+	public T[] rep(){
+		return array;
+	}
+	// 非法！
+	//! public <U> U[] makeArray() { return new U[10]; }
+} ///:~
+::<<
+
+
+由于试图创建的类型已被擦除，所以是类型未知的数组，你可以创建Object数组然后将其转型 ，但是会得到一个"不受检查"的警告，因为这个数组没有真正持有或动态检查类型T。
+
+也可以参考泛型章节的擦出的补偿之泛型数组
+
+>>::
+public class Chapter16_05 {
+	public static void main(String[] args) {
+		ArrayOfGenericType<Integer> gen = new ArrayOfGenericType<Integer>(2);
+		// 运行仍然报错：java.lang.ClassCastException: [Ljava.lang.Object; cannot be cast to [Ljava.lang.Integer;  
+		// 参考泛型章节的泛型数组相关内容
+		Integer[] intArr = gen.rep();
+    }
+}
+::<<
+
+
+
+
+6、创建测试数据
+==============
+
+6.1、Arrays.fill()
+------------------
+ 
+只能用同一个 值（同一个对象引用）填充各个位置
+
+>>::
+class FillingArrays {
+	public static void main(String[] args) {
+	    int size = 6;
+	    boolean[] a1 = new boolean[size];
+	    byte[] a2 = new byte[size];
+	    char[] a3 = new char[size];
+	    short[] a4 = new short[size];
+	    int[] a5 = new int[size];
+	    long[] a6 = new long[size];
+	    float[] a7 = new float[size];
+	    double[] a8 = new double[size];
+	    String[] a9 = new String[size];
+	    Arrays.fill(a1, true);
+	    System.out.print("a1 = " + Arrays.toString(a1));
+	    Arrays.fill(a2, (byte)11);
+	    System.out.print("a2 = " + Arrays.toString(a2));
+	    Arrays.fill(a3, 'x');
+	    System.out.print("a3 = " + Arrays.toString(a3));
+	    Arrays.fill(a4, (short)17);
+	    System.out.print("a4 = " + Arrays.toString(a4));
+	    Arrays.fill(a5, 19);
+	    System.out.print("a5 = " + Arrays.toString(a5));
+	    Arrays.fill(a6, 23);
+	    System.out.print("a6 = " + Arrays.toString(a6));
+	    Arrays.fill(a7, 29);
+	    System.out.print("a7 = " + Arrays.toString(a7));
+	    Arrays.fill(a8, 47);
+	    System.out.print("a8 = " + Arrays.toString(a8));
+	    Arrays.fill(a9, "Hello");
+	    System.out.print("a9 = " + Arrays.toString(a9));
+	    // 也可以设置填充范围
+	    Arrays.fill(a9, 3, 5, "World");
+	    System.out.print("a9 = " + Arrays.toString(a9));
+	}
+} /* Output:
+	a1 = [true, true, true, true, true, true]
+	a2 = [11, 11, 11, 11, 11, 11]
+	a3 = [x, x, x, x, x, x]
+	a4 = [17, 17, 17, 17, 17, 17]
+	a5 = [19, 19, 19, 19, 19, 19]
+	a6 = [23, 23, 23, 23, 23, 23]
+	a7 = [29.0, 29.0, 29.0, 29.0, 29.0, 29.0]
+	a8 = [47.0, 47.0, 47.0, 47.0, 47.0, 47.0]
+	a9 = [Hello, Hello, Hello, Hello, Hello, Hello]
+	a9 = [Hello, Hello, Hello, World, World, Hello]
+	*///:~
+::<<
+
+
+
+
+6.2、数据生成器
+---------------
+
+下面是各个基本类型的包装类和String类的生成器：
+
+>>::
+interface Generator<T> { T next(); } ///:~
+
+class CountingGenerator {
+	public static class Boolean implements Generator<java.lang.Boolean> {
+	    private boolean value = false;
+	    public java.lang.Boolean next() {
+	    	value = !value; // Just flips back and forth
+	    	return value;
+	    }
+	}
+	public static class Byte implements Generator<java.lang.Byte> {
+	    private byte value = 0;
+	    public java.lang.Byte next() { return value++; }
+	}
+	
+	static char[] chars = ("abcdefghijklmnopqrstuvwxyz" +
+	    "ABCDEFGHIJKLMNOPQRSTUVWXYZ").toCharArray();
+	
+	public static class Character implements Generator<java.lang.Character> {
+	    int index = -1;
+	    public java.lang.Character next() {
+	      index = (index + 1) % chars.length;
+	      return chars[index];
+	    }
+	}
+	
+	/**
+	 * 该类使用CountingGenerator.Character来填充一个字符数组，该数组最终转换为String
+	 */
+	public static class String implements Generator<java.lang.String> {
+	    private int length = 7;
+	    Generator<java.lang.Character> cg = new Character();
+	    public String() {}
+	    public String(int length) { this.length = length; }
+	    public java.lang.String next() {
+	      char[] buf = new char[length];
+	      for(int i = 0; i < length; i++)
+	        buf[i] = cg.next();
+	      return new java.lang.String(buf);
+	    }
+	}
+	
+	public static class Short implements Generator<java.lang.Short> {
+	    private short value = 0;
+	    public java.lang.Short next() { return value++; }
+	}
+	
+	public static class Integer implements Generator<java.lang.Integer> {
+	    private int value = 0;
+	    public java.lang.Integer next() { return value++; }
+	}
+	  
+	public static class Long implements Generator<java.lang.Long> {
+	    private long value = 0;
+	    public java.lang.Long next() { return value++; }
+	}
+	
+	public static class Float implements Generator<java.lang.Float> {
+	    private float value = 0;
+	    public java.lang.Float next() {
+	      float result = value;
+	      value += 1.0;
+	      return result;
+	    }
+	}
+	
+	public static class Double implements Generator<java.lang.Double> {
+	    private double value = 0.0;
+	    public java.lang.Double next() {
+	      double result = value;
+	      value += 1.0;
+	      return result;
+	    }
+	}
+}
+::<<
+
+
+下面测试一下这些生成器
+>>b:
+Tips：使用反射进行测试
+:b<<
+
+>>::
+class GeneratorsTest {
+	public static int size = 10;
+	public static void test(Class<?> surroundingClass) {
+	    for(Class<?> type : surroundingClass.getClasses()) {
+	    	System.out.print(type.getSimpleName() + ": ");
+	    	try {
+	    		Generator<?> g = (Generator<?>)type.newInstance();
+	    		for(int i = 0; i < size; i++)
+	    			System.out.printf(g.next() + " ");
+	    		System.out.println();
+	    	} catch(Exception e) {
+	    		throw new RuntimeException(e);
+	    	}
+	    }
+	}
+	public static void main(String[] args) {
+	    test(CountingGenerator.class);
+	}
+} /* Output:
+	Double: 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0
+	Float: 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0
+	Long: 0 1 2 3 4 5 6 7 8 9
+	Integer: 0 1 2 3 4 5 6 7 8 9
+	Short: 0 1 2 3 4 5 6 7 8 9
+	String: abcdefg hijklmn opqrstu vwxyzAB CDEFGHI JKLMNOP QRSTUVW XYZabcd efghijk lmnopqr
+	Character: a b c d e f g h i j
+	Byte: 0 1 2 3 4 5 6 7 8 9
+	Boolean: true false true false true false true false true false
+	*///:~
+::<<
+
+
+下面是一组使用随机数生成器的Generator：
+
+>>::
+class RandomGenerator {
+	private static Random r = new Random(47);
+	public static class	Boolean implements Generator<java.lang.Boolean> {
+	    public java.lang.Boolean next() {
+	    	return r.nextBoolean();
+	    }
+	}
+	
+	public static class Byte implements Generator<java.lang.Byte> {
+	    public java.lang.Byte next() {
+	      return (byte)r.nextInt();
+	    }
+	}
+	
+	public static class Character implements Generator<java.lang.Character> {
+	    public java.lang.Character next() {
+	      return CountingGenerator.chars[
+	        r.nextInt(CountingGenerator.chars.length)];
+	    }
+	}
+	
+	// 继承自CountingGenerator.String，并且只是插入了一个新的 Character
+	public static class String extends CountingGenerator.String {
+	    // Plug in the random Character generator:
+	    { cg = new Character(); } // Instance initializer
+	    public String() {}
+	    public String(int length) { super(length); }
+	}
+	  
+	public static class Short implements Generator<java.lang.Short> {
+	    public java.lang.Short next() {
+	      return (short)r.nextInt();
+	    }
+	}
+	
+	// 为了不生成过大的数字，设置默认的模数为 10000，够在其运行你选择更小的值
+	public static class Integer implements Generator<java.lang.Integer> {
+	    private int mod = 10000;
+	    public Integer() {}
+	    public Integer(int modulo) { mod = modulo; }
+	    public java.lang.Integer next() {
+	      return r.nextInt(mod);
+	    }
+	}
+	  
+	public static class Long implements Generator<java.lang.Long> {
+	    private int mod = 10000;
+	    public Long() {}
+	    public Long(int modulo) { mod = modulo; }
+	    public java.lang.Long next() {
+	      return new java.lang.Long(r.nextInt(mod));
+	    }
+	}
+	  
+	// 只保留小数点后两位数字
+	public static class Float implements Generator<java.lang.Float> {
+	    public java.lang.Float next() {
+	      // Trim all but the first two decimal places:
+	      int trimmed = Math.round(r.nextFloat() * 100);
+	      return ((float)trimmed) / 100;
+	    }
+	}
+	  
+	// 只保留小数点后两位数字
+	public static class Double implements Generator<java.lang.Double> {
+	    public java.lang.Double next() {
+	      long trimmed = Math.round(r.nextDouble() * 100);
+	      return ((double)trimmed) / 100;
+	    }
+	}
+}
+::<<
+
+
+
+
+
+6.3、从Generator中创建数组
+-------------------------
+
+>>::
+class Generated {
+	// 填充一个已存在的数组
+	public static <T> T[] array(T[] a, Generator<T> gen) {
+		// CollectionData会创建一个Collection对象，该对象所有填充的元素又gen产生
+		// 所有的Collection子类型都拥有toArray()方法，该方法使用Collecion中的元素来填充数组
+	    return new CollectionData<T>(gen, a.length).toArray(a);  
+	}
+	// 创建一个新数组并填充
+	@SuppressWarnings("unchecked")
+	public static <T> T[] array(Class<T> type, Generator<T> gen, int size) {
+		// 使用反射来动态创建具有恰当类型和数量的新数组，然后使用和上面方法一样的技术填充数组
+	    T[] a = (T[])java.lang.reflect.Array.newInstance(type, size);
+	    return new CollectionData<T>(gen, size).toArray(a);
+	}
+}
+::<<
+
+
+下面是CollectionData类的实现
+
+>>::
+class CollectionData<T> extends ArrayList<T> {
+	public CollectionData(Generator<T> gen, int quantity) {
+	    for(int i = 0; i < quantity; i++)
+	      add(gen.next());
+	}
+	// A generic convenience method:
+	public static <T> CollectionData<T> list(Generator<T> gen, int quantity) {
+	    return new CollectionData<T>(gen, quantity);
+	}
+}
+::<<
+
+
+下面使用前一节中的CountingGenerator的一个生成器来测试Generated
+
+>>::
+class TestGenerated {
+	public static void main(String[] args) {
+	    Integer[] a = { 9, 8, 7, 6 };
+	    System.out.println(Arrays.toString(a));
+	    // 填充数组
+	    a = Generated.array(a,new CountingGenerator.Integer());
+	    System.out.println(Arrays.toString(a));
+	    // 创建一个新数组并填充
+	    Integer[] b = Generated.array(Integer.class,
+	        new CountingGenerator.Integer(), 15);
+	    System.out.println(Arrays.toString(b));
+	}
+} /* Output:
+	[9, 8, 7, 6]
+	[0, 1, 2, 3]
+	[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+	*///:~
+::<<
+
+
+泛型不能用于基本类型，为了填充基本类型的数组，我们需要创建一个转换器，它可以接收任意的包装器对象数组，并将其转换为基本类型数组：
+
+>>::
+class ConvertTo {
+	public static boolean[] primitive(Boolean[] in) {
+	    boolean[] result = new boolean[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i]; // Autounboxing
+	    return result;
+	}
+	public static char[] primitive(Character[] in) {
+	    char[] result = new char[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i];
+	    return result;
+	}
+	public static byte[] primitive(Byte[] in) {
+	    byte[] result = new byte[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i];
+	    return result;
+	}
+	public static short[] primitive(Short[] in) {
+	    short[] result = new short[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i];
+	    return result;
+	}
+	public static int[] primitive(Integer[] in) {
+	    int[] result = new int[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i];
+	    return result;
+	}
+	public static long[] primitive(Long[] in) {
+	    long[] result = new long[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i];
+	    return result;
+	}
+	public static float[] primitive(Float[] in) {
+		float[] result = new float[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i];
+	    return result;
+	}
+	public static double[] primitive(Double[] in) {
+	    double[] result = new double[in.length];
+	    for(int i = 0; i < in.length; i++)
+	    	result[i] = in[i];
+	    return result;
+	}
+} ///:~
+::<<
+
+
+最后使用RandomGenerator中的类来测试这些数组生成器：
+
+>>::
+class TestArrayGeneration {
+	 public static void main(String[] args) {
+	    int size = 6;
+	    boolean[] a1 = ConvertTo.primitive(Generated.array(
+	    		Boolean.class, new RandomGenerator.Boolean(), size));
+	    System.out.println("a1 = " + Arrays.toString(a1));
+	    byte[] a2 = ConvertTo.primitive(Generated.array(
+	    		Byte.class, new RandomGenerator.Byte(), size));
+	    System.out.println("a2 = " + Arrays.toString(a2));
+	    char[] a3 = ConvertTo.primitive(Generated.array(Character.class,
+	      	new RandomGenerator.Character(), size));
+	    System.out.println("a3 = " + Arrays.toString(a3));
+	    short[] a4 = ConvertTo.primitive(Generated.array(
+	    		Short.class, new RandomGenerator.Short(), size));
+	    System.out.println("a4 = " + Arrays.toString(a4));
+	    int[] a5 = ConvertTo.primitive(Generated.array(
+	    		Integer.class, new RandomGenerator.Integer(), size));
+	    System.out.println("a5 = " + Arrays.toString(a5));
+	    long[] a6 = ConvertTo.primitive(Generated.array(
+	    		Long.class, new RandomGenerator.Long(), size));
+	    System.out.println("a6 = " + Arrays.toString(a6));
+	    float[] a7 = ConvertTo.primitive(Generated.array(
+	    		Float.class, new RandomGenerator.Float(), size));
+	    System.out.println("a7 = " + Arrays.toString(a7));
+	    double[] a8 = ConvertTo.primitive(Generated.array(
+	    		Double.class, new RandomGenerator.Double(), size));
+	    System.out.println("a8 = " + Arrays.toString(a8));
+	  }
+} /* Output:
+	a1 = [true, false, true, false, false, true]
+	a2 = [104, -79, -76, 126, 33, -64]
+	a3 = [Z, n, T, c, Q, r]
+	a4 = [-13408, 22612, 15401, 15161, -28466, -12603]
+	a5 = [7704, 7383, 7706, 575, 8410, 6342]
+	a6 = [7674, 8804, 8950, 7826, 4322, 896]
+	a7 = [0.01, 0.2, 0.4, 0.79, 0.27, 0.45]
+	a8 = [0.16, 0.87, 0.7, 0.66, 0.87, 0.59]
+	*///:~
+::<<
+
+	
+
+
+7、Arrays实用功能
+=================
+
+Arrays类有一套用于数组的静态方法（所有这些方法对各种基本类型和Object类而重载过）：
+
+>>t------------------------>
+>>th:equals()`|`比较两个数字是否相等
+>>tr:deepEquals()`|`用于多维数组比较
+>>tr:fill()`|`填充数组
+>>tr:sort()`|`数组排序
+>>tr:binarySearch()`|`在已经排序的数组中查找元素
+>>tr:toString`|`产生数组的String表示
+>>tr:hashCode()`|`产生数组的三列吗
+>>tr:Arrays.asList()`|`接受任意的序列或数组作为其参数，并转换为List容器
+<----------------t<<
+
+
+7.1、复制数组
+---------------
+
+System.arraycopy(): 复制数组，比用for循环复制要快很多，该方法对有所类型做了重载，下面是处理int数组的例子：
+
+>>::
+class CopyingArrays {
+	public static void main(String[] args) {
+	    int[] i = new int[7];
+	    int[] j = new int[10];
+	    Arrays.fill(i, 47);
+	    Arrays.fill(j, 99);
+	    System.out.println("i = " + Arrays.toString(i));
+	    System.out.println("j = " + Arrays.toString(j));
+	    // 复制基本类型数组
+	    System.arraycopy(i, 0, j, 0, i.length);
+	    System.out.println("j = " + Arrays.toString(j));
+	    int[] k = new int[5];
+	    Arrays.fill(k, 103);
+	    System.arraycopy(i, 0, k, 0, k.length);
+	    System.out.println("k = " + Arrays.toString(k));
+	    Arrays.fill(k, 103);
+	    System.arraycopy(k, 0, i, 0, k.length);
+	    System.out.println("i = " + Arrays.toString(i));
+	    // Objects:
+	    Integer[] u = new Integer[10];
+	    Integer[] v = new Integer[5];
+	    Arrays.fill(u, new Integer(47));
+	    Arrays.fill(v, new Integer(99));
+	    System.out.println("u = " + Arrays.toString(u));
+	    System.out.println("v = " + Arrays.toString(v));
+	    // 复制对象数组，只是复制了对象的引用，是浅复制
+	    System.arraycopy(v, 0, u, u.length/2, v.length);
+	    System.out.println("u = " + Arrays.toString(u));
+	}
+} /* Output:
+	i = [47, 47, 47, 47, 47, 47, 47]
+	j = [99, 99, 99, 99, 99, 99, 99, 99, 99, 99]
+	j = [47, 47, 47, 47, 47, 47, 47, 99, 99, 99]
+	k = [47, 47, 47, 47, 47]
+	i = [103, 103, 103, 103, 103, 47, 47]
+	u = [47, 47, 47, 47, 47, 47, 47, 47, 47, 47]
+	v = [99, 99, 99, 99, 99]
+	u = [47, 47, 47, 47, 47, 99, 99, 99, 99, 99]
+	*///:~
+::<<
+
+注意复制对象数组的时候，只是浅复制。另外，System.arraycopy()不会执行自动包装和自动拆包。
+
+
+7.2、数组的比较
+--------------
+
+Arrays.equals(): 相等的条件：元素个数是否相等，对应位置的元素是否也相等。
+
+对于基本类型是通过使用其包装器类的equals()判断是否相等的
+
+>>::
+class ComparingArrays {
+	public static void main(String[] args) {
+	    int[] a1 = new int[10];
+	    int[] a2 = new int[10];
+	    Arrays.fill(a1, 47);
+	    Arrays.fill(a2, 47);
+	    // 使用包装器类判断是否相等
+	    System.out.println(Arrays.equals(a1, a2));
+	    a2[3] = 11;
+	    System.out.println(Arrays.equals(a1, a2));
+	    String[] s1 = new String[4];
+	    Arrays.fill(s1, "Hi");
+	    String[] s2 = { new String("Hi"), new String("Hi"),
+	      new String("Hi"), new String("Hi") };
+	    // 不同的对象，比较结果却相等，是因为String数组相等是基于内容的（String的equals方法重载过）。
+	    System.out.println(Arrays.equals(s1, s2));
+	}
+} /* Output:
+	true
+	false
+	true
+	*///:~
+
+class User{
+	private String username;
+	private String nickname;
+	public User(String username, String nickname){
+		this.username = username;
+		this.nickname = nickname;
+	}
+	public String getUsername() {
+    	return username;
+    }
+	public void setUsername(String username) {
+    	this.username = username;
+    }
+	public String getNickname() {
+    	return nickname;
+    }
+	public void setNickname(String nickname) {
+    	this.nickname = nickname;
+    }
+}
+
+public class Chapter16_07_02 {
+	public static void main(String[] args) {
+	    User[] users1 = new User[3];
+	    User[] users2 = new User[3];
+	    User user1 = new User("Jason", "arthinking");
+	    User user2 = new User("Jason", "arthinking");
+	    Arrays.fill(users1, user1);
+	    Arrays.fill(users2, user1);
+	    // 输出为true
+	    System.out.println(Arrays.equals(users1, users2));
+	    Arrays.fill(users2, user2);
+	    //  输出为 false
+	    System.out.println(Arrays.equals(users1, users2));
+	    // 可见对象直接调用了Object.equals()方法，比较内存地址是否相等
+	    // 为了比较内容，需要重载User的equals方法
+    }
+}
+::<<
+
+
+
+7.3、数组元素的比较
+------------------
+
+下面的类实现了Comparable接口（此接口只有一个compareTo()方法），并且使用Arrays.sort()方法演示了比较的效果
+
+>>::
+class CompType implements Comparable<CompType> {
+	  int i;
+	  int j;
+	  private static int count = 1;
+	  public CompType(int n1, int n2) {
+	    i = n1;
+	    j = n2;
+	  }
+	  public String toString() {
+	    String result = "[i = " + i + ", j = " + j + "]";
+	    if(count++ % 3 == 0)
+	      result += "\n";
+	    return result;
+	  }
+	  @Override
+	  public int compareTo(CompType rv) {
+	    return (i < rv.i ? -1 : (i == rv.i ? 0 : 1));
+	  }
+	  private static Random r = new Random(47);
+	  public static Generator<CompType> generator() {
+	    return new Generator<CompType>() {
+	      public CompType next() {
+	        return new CompType(r.nextInt(100),r.nextInt(100));
+	      }
+	    };
+	  }
+	  public static void main(String[] args) {
+	    CompType[] a =
+	      Generated.array(new CompType[12], generator());
+	    System.out.println("before sorting:");
+	    System.out.println(Arrays.toString(a));
+	    Arrays.sort(a);
+	    System.out.println("after sorting:");
+	    System.out.println(Arrays.toString(a));
+	  }
+} /* Output:
+	before sorting:
+	[[i = 58, j = 55], [i = 93, j = 61], [i = 61, j = 29]
+	, [i = 68, j = 0], [i = 22, j = 7], [i = 88, j = 28]
+	, [i = 51, j = 89], [i = 9, j = 78], [i = 98, j = 61]
+	, [i = 20, j = 58], [i = 16, j = 40], [i = 11, j = 22]
+	]
+	after sorting:
+	[[i = 9, j = 78], [i = 11, j = 22], [i = 16, j = 40]
+	, [i = 20, j = 58], [i = 22, j = 7], [i = 51, j = 89]
+	, [i = 58, j = 55], [i = 61, j = 29], [i = 68, j = 0]
+	, [i = 88, j = 28], [i = 93, j = 61], [i = 98, j = 61]
+	]
+	*///:~
+::<<
+
+如果没有实现Comparable接口，会抛出ClassCastException运行时异常，因为sort方法会把参数类型转换为Comparable。
+
+Collections的reverseOrder方法可以产生一个Comparator，可以反转自然的排序顺序：
+
+>>::
+class Reverse {
+	public static void main(String[] args) {
+	    CompType[] a = Generated.array(
+	    		new CompType[12], CompType.generator());
+	    System.out.println("before sorting:");
+	    System.out.println(Arrays.toString(a));
+	    // 反转排序
+	    Arrays.sort(a, Collections.reverseOrder());
+	    System.out.println("after sorting:");
+	    System.out.println(Arrays.toString(a));
+	}
+} /* Output:
+	before sorting:
+	[[i = 58, j = 55], [i = 93, j = 61], [i = 61, j = 29]
+	, [i = 68, j = 0], [i = 22, j = 7], [i = 88, j = 28]
+	, [i = 51, j = 89], [i = 9, j = 78], [i = 98, j = 61]
+	, [i = 20, j = 58], [i = 16, j = 40], [i = 11, j = 22]
+	]
+	after sorting:
+	[[i = 98, j = 61], [i = 93, j = 61], [i = 88, j = 28]
+	, [i = 68, j = 0], [i = 61, j = 29], [i = 58, j = 55]
+	, [i = 51, j = 89], [i = 22, j = 7], [i = 20, j = 58]
+	, [i = 16, j = 40], [i = 11, j = 22], [i = 9, j = 78]
+	]
+	*///:~
+::<<
+
+
+假设有人给你一个并没有实现Comparable的类，或者给你的类实现了Comparable接口，但是你并不喜欢他的实现方式，你需要另外一种不同的比较方式，可以使用策略模式，创建一个实现了Comparator接口的单独的类：
+ 
+>>::
+class CompTypeComparator implements Comparator<CompType> {
+	@Override
+	public int compare(CompType o1, CompType o2) {
+		return (o1.j < o2.j ? -1 : (o1.j == o2.j ? 0 : 1));
+	}
+}
+
+class ComparatorTest {
+	public static void main(String[] args) {
+	    CompType[] a = Generated.array(
+	    		new CompType[12], CompType.generator());
+	    System.out.println("before sorting:");
+	    System.out.println(Arrays.toString(a));
+	    Arrays.sort(a, new CompTypeComparator());
+	    System.out.println("after sorting:");
+	    System.out.println(Arrays.toString(a));
+	}
+} /* Output:
+	before sorting:
+	[[i = 58, j = 55], [i = 93, j = 61], [i = 61, j = 29]
+	, [i = 68, j = 0], [i = 22, j = 7], [i = 88, j = 28]
+	, [i = 51, j = 89], [i = 9, j = 78], [i = 98, j = 61]
+	, [i = 20, j = 58], [i = 16, j = 40], [i = 11, j = 22]
+	]
+	after sorting:
+	[[i = 68, j = 0], [i = 22, j = 7], [i = 11, j = 22]
+	, [i = 88, j = 28], [i = 61, j = 29], [i = 16, j = 40]
+	, [i = 58, j = 55], [i = 20, j = 58], [i = 93, j = 61]
+	, [i = 98, j = 61], [i = 9, j = 78], [i = 51, j = 89]
+	]
+	*///:~
+::<<
+
+
+
+7.4、数组排序
+------------------
+
+使用内置的排序方法，可以对任意的基本类型数组排序，也可以对对象数组排序，只要该对象实现了Comparable接口，或者具有相关联的Comparator:
+
+>>::
+class StringSorting {
+	public static void main(String[] args) {
+	    String[] sa = Generated.array(new String[20],
+	    		new RandomGenerator.String(5));
+	    System.out.println("Before sort: " + Arrays.toString(sa));
+	    Arrays.sort(sa);
+	    System.out.println("After sort: " + Arrays.toString(sa));
+	    Arrays.sort(sa, Collections.reverseOrder());
+	    System.out.println("Reverse sort: " + Arrays.toString(sa));
+	    // 忽略大小写排序
+	    Arrays.sort(sa, String.CASE_INSENSITIVE_ORDER);
+	    System.out.println("Case-insensitive sort: " + Arrays.toString(sa));
+	}
+} /* Output:
+	Before sort: [YNzbr, nyGcF, OWZnT, cQrGs, eGZMm, JMRoE, suEcU, OneOE, dLsmw, HLGEa, hKcxr, EqUCB, bkIna, Mesbt, WHkjU, rUkZP, gwsqP, zDyCy, RFJQA, HxxHv]
+	After sort: [EqUCB, HLGEa, HxxHv, JMRoE, Mesbt, OWZnT, OneOE, RFJQA, WHkjU, YNzbr, bkIna, cQrGs, dLsmw, eGZMm, gwsqP, hKcxr, nyGcF, rUkZP, suEcU, zDyCy]
+	Reverse sort: [zDyCy, suEcU, rUkZP, nyGcF, hKcxr, gwsqP, eGZMm, dLsmw, cQrGs, bkIna, YNzbr, WHkjU, RFJQA, OneOE, OWZnT, Mesbt, JMRoE, HxxHv, HLGEa, EqUCB]
+	Case-insensitive sort: [bkIna, cQrGs, dLsmw, eGZMm, EqUCB, gwsqP, hKcxr, HLGEa, HxxHv, JMRoE, Mesbt, nyGcF, OneOE, OWZnT, RFJQA, rUkZP, suEcU, WHkjU, YNzbr, zDyCy]
+	*///:~
+::<<
+
+Java标准库中的排序算法针对正排序的特殊类型进行了优化：
+>>ul:
+>>li:针对基本类型的快速排序
+>>li:针对对象设计的“稳定归并排序”
+:ul<<
+
+ 所以无需担心排序的性能问，除非确实确定了排序不分是程序效率的瓶颈。
+
+
+7.5、在已排序的数组中查找
+------------------------
+
+如果数组排好序了，可以使用Arrays.binarySearch()进行查找，对未排序的数组使用binarySearch，会产生意想不到的结果。
+>>pre:
+ * 查找到了则返回大于等于0的整数
+ * 否则返回负值，表示保持数组排序状态下此目标所应该插入的位置，此负值计算方法：
+ *     -(插入点) - 1
+:pre<<
+
+>>::
+class ArraySearching {
+	public static void main(String[] args) {
+	    Generator<Integer> gen =
+	    		new RandomGenerator.Integer(1000);
+	    int[] a = ConvertTo.primitive(
+	    		Generated.array(new Integer[25], gen));
+	    Arrays.sort(a);
+	    System.out.println("Sorted array: " + Arrays.toString(a));
+	    while(true) {
+	    	int r = gen.next();
+	    	// 使用binarySearch在数组中查找元素r
+	    	int location = Arrays.binarySearch(a, r);
+	    	if(location >= 0) {
+	    		System.out.println("Location of " + r + " is " + location +
+	    				", a[" + location + "] = " + a[location]);
+	    		break; // Out of while loop
+	    	}
+	    }
+	}
+} /* Output:
+	Sorted array: [128, 140, 200, 207, 258, 258, 278, 288, 322, 429, 511, 520, 522, 551, 555, 589, 693, 704, 809, 861, 861, 868, 916, 961, 998]
+	Location of 322 is 8, a[8] = 322
+	*///:~
+::<<
+
+如果使用Comparator排序对象数组（基本类型数组无法使用Comparator进行排序）了，使用binarySearch对对象数组进行排序的时候必须提供同样的Comparator
+
+>>:: 
+class AlphabeticSearch {
+	public static void main(String[] args) {
+		String[] sa = Generated.array(new String[30],
+				new RandomGenerator.String(5));
+		// 使用Comparator排序对象数组（基本类型数组无法使用Comparator进行排序）
+	    Arrays.sort(sa, String.CASE_INSENSITIVE_ORDER);
+	    System.out.println(Arrays.toString(sa));
+	    // 使用binarySearch必须提供同样的Comparator
+	    int index = Arrays.binarySearch(sa, sa[10],
+	    		String.CASE_INSENSITIVE_ORDER);
+	    System.out.println("Index: "+ index + "\n"+ sa[index]);
+	}
+} /* Output:
+	[bkIna, cQrGs, cXZJo, dLsmw, eGZMm, EqUCB, gwsqP, hKcxr, HLGEa, HqXum, HxxHv, JMRoE, JmzMs, Mesbt, MNvqe, nyGcF, ogoYW, OneOE, OWZnT, RFJQA, rUkZP, sgqia, slJrL, suEcU, uTpnX, vpfFv, WHkjU, xxEAJ, YNzbr, zDyCy]
+	Index: 10
+	HxxHv
+	*///:~
+::<<
+
+
+
+summary
+========
+
+现在容器在除了性能外的各个方法都使得数组相形见绌。
+
+有了额外的自动包装机制和泛型，在容器中持有基本类型就变得易如反掌了，而这也进一步促使你使用容器来替换数组。
+
+因为泛型可以产生类型安全的容器，面对这一点，数组变得毫无优势。
+
+优先容器而不是数组，只有在证明性能成为问，并且切花到数组对性能有所帮助时，你才应该将程序重构为使用数组。
+
+如果容器能够像某些语言一样内置于语言的内核中，那么编译器就会得到更好的优化良机。
+
+我们肯定还会使用数组，并且你在读写代码的时候还会看到他，但是，容器几乎是更好的选择。
