@@ -1,0 +1,3056 @@
+1、与C++的比较
+===========
+
+Java中的泛型参考了C++的模板，Java的界限是Java泛型的局限。
+
+2、简单泛型
+========
+
+促成泛型出现最引人注目的一个原因就是为了创造容器类。
+
+首先看一个只能持有单个对象的类，这个类可以明确指定其持有的对象的类型
+
+>>::
+class Holder1 {
+    private Circle a;
+    public Holder1(Circle a) { this.a = a; }
+    Circle get() { return a; }
+}
+::<<
+
+上面的类的可重用性不怎么样，无法持有其他类型的任何对象，下面通过持有Object类型的对象实现
+
+>>::
+class Holder2 {
+    private Object a;
+    public Holder2(Object a) { this.a = a; }
+    public void set(Object a) { this.a = a; }
+    public Object get() { return a; }
+    public static void main(String[] args) {
+        // 下面演示存储不同类型的对象
+      Holder2 h2 = new Holder2(new Circle());
+      Circle a = (Circle)h2.get();
+      h2.set("Not an Automobile");
+      String s = (String)h2.get();
+      h2.set(1); // Autoboxes to Integer
+      Integer x = (Integer)h2.get();
+    }
+}
+::<<
+
+通常而言，我们只会用容器来存储一种类型的队形，泛型的主要目的之一就是用来指定容器要持有什么类型的对象，由编译器来保证类型的正确性：
+ 
+>>::
+class Holder3<T> {
+    private T a;
+    public Holder3(T a) { this.a = a; }
+    public void set(T a) { this.a = a; }
+    public T get() { return a; }
+    public static void main(String[] args) {
+        // 当你创建Holder3对象时，必须指明想持有什么类型的对象，然后只能存入该类型（或其子类型，因为多台与泛型不冲突）的对象了
+        // 取出对象的时候，会自动转型为正确的类型
+        Holder3<Circle> h3 =
+                new Holder3<Circle>(new Circle());
+        Circle a = h3.get(); // No cast needed
+        // h3.set("Not an Automobile"); // Error
+        // h3.set(1); // Error
+    }
+}
+::<<
+
+也就是告诉编译器想使用什么类型，然后编译器帮你处理一切细节。
+
+
+2.1、一个一元组类库
+--------------
+
+为了在一次方法调用返回多个对象，可以使用元组的概念：将一组对象直接打包存储于其中的一个单一对象，这个类容器允许读取其中元素，但是不允许向其中存放新的对象（也称为数据传送对象，或信使）。
+
+元组可以具有任意长度，元组中的对象可以使任意不同类型的，下面的程序是一个二维元组，能够持有两个对象：
+
+>>::
+class TwoTuple<A,B> {
+    public final A first;  // 声明为final，同样确保了public的安全性，不可改写，如果想要使用具有不同元素的元组，就强制要求另外创建一个新的TwoTuple对象
+    public final B second;
+    // 元组隐含的保持了其中元素的次序
+    public TwoTuple(A a, B b) { first = a; second = b; }
+    public String toString() {
+        return "(" + first + ", " + second + ")";
+    }
+}
+
+/**
+ * 使用继承机制实现长度更长的元组
+ */
+class ThreeTuple<A,B,C> extends TwoTuple<A,B> {
+    public final C third;
+    public ThreeTuple(A a, B b, C c) {
+        super(a, b);
+        third = c;
+    }
+    public String toString() {
+        return "(" + first + ", " + second + ", " + third +")";
+    }
+}
+
+class FourTuple<A,B,C,D> extends ThreeTuple<A,B,C> {
+    public final D fourth;
+    public FourTuple(A a, B b, C c, D d) {
+      super(a, b, c);
+      fourth = d;
+    }
+    public String toString() {
+      return "(" + first + ", " + second + ", " +
+        third + ", " + fourth + ")";
+    }
+}
+::<<
+
+为了使用元组，只需定义长度合适的元组，作为方法的返回值就可以了
+>>::
+class TupleTest {
+    static TwoTuple<String,Integer> f() {
+        // Autoboxing converts the int to Integer:
+        return new TwoTuple<String,Integer>("hi", 47);  // 这里的new语句有点啰嗦，后面有方法简化
+    }
+    static ThreeTuple<Circle,String,Integer> g() {
+        return new ThreeTuple<Circle, String, Integer>(
+                new Circle(), "hi", 47);
+    }
+    
+    static FourTuple<Circle,Square,String,Integer> h() {
+      return
+        new FourTuple<Circle,Square,String,Integer>(
+          new Circle(), new Square(), "hi", 47);
+    }
+    static FiveTuple<Circle,Square,String,Integer,Double> k() {
+      return new
+        FiveTuple<Circle,Square,String,Integer,Double>(
+          new Circle(), new Square(), "hi", 47, 11.1);
+    }
+    
+    public static void test() {
+        TwoTuple<String,Integer> ttsi = f();
+        FourTuple<Circle,Square,String,Integer> ts = h();
+        System.out.println(ttsi);
+        // ttsi.first = "there"; // Compile error: final
+    }
+}
+
+class FiveTuple<A,B,C,D,E> extends FourTuple<A,B,C,D> {
+  public final E fifth;
+  public FiveTuple(A a, B b, C c, D d, E e) {
+    super(a, b, c, d);
+    fifth = e;
+  }
+  public String toString() {
+    return "(" + first + ", " + second + ", " +
+      third + ", " + fourth + ", " + fifth + ")";
+  }
+}
+
+public class Chapter15_2_1 {
+	public static void main(String args){
+	    TupleTest.test();
+	}
+}
+::<<
+
+
+
+
+2.2、一个堆栈类
+------------
+
+>>::
+class LinkedStack<T> {
+    private static class Node<U> {
+        U item;
+        Node<U> next;
+        Node() { item = null; next = null; }
+        Node(U item, Node<U> next) {
+            this.item = item;
+            this.next = next;
+        }
+        boolean end() { return item == null && next == null; }
+    }
+    private Node<T> top = new Node<T>(); // End sentinel
+    public void push(T item) {
+        top = new Node<T>(item, top);
+    } 
+    public T pop() {
+        T result = top.item;
+        if(!top.end())
+            top = top.next;
+        return result;
+    }
+    public static void test() {
+        LinkedStack<String> lss = new LinkedStack<String>();
+        for(String s : "Phasers on stun!".split(" "))
+            lss.push(s);
+        String s;
+        while((s = lss.pop()) != null)
+            System.out.println(s);
+    }
+} /* Output:
+  stun!
+  on
+  Phasers
+  *///:~
+::<<
+
+
+
+2.3、RandomList
+--------------
+
+持有特定类型对象的列表，每次调用其上的select()方法，可以随机地取一个元素：
+
+>>::
+class RandomList<T> {
+    private ArrayList<T> storage = new ArrayList<T>();
+    private Random rand = new Random(47);
+    public void add(T item) { storage.add(item); }
+    public T select() {
+        return storage.get(rand.nextInt(storage.size()));
+    }
+    public static void main(String[] args) {
+        RandomList<String> rs = new RandomList<String>();
+        for(String s: ("The quick brown fox jumped over " +
+                "the lazy brown dog").split(" "))
+            rs.add(s);
+        for(int i = 0; i < 11; i++)
+            System.out.print(rs.select() + " ");
+    }
+} 
+/* Output:
+brown over fox quick quick dog brown The brown lazy brown
+*///:~
+::<<
+
+
+3、泛型接口
+========
+
+泛型接口也可以应用于接口，例如生成器
+
+是工厂模式的一种应用，不过使用生成器创建新的对象的时候，不需要任何的参数，而工厂方法一般需要参数。
+
+下面我就来创建一个生成器来展示泛型在接口中的使用场景
+>>::
+interface Generator<T> { T next(); } ///:~
+
+// 现在我们编写一个类，实现Generator<Shape>接口，能够随机生成不同类型的Coffee对象
+// 实现了Iterable接口，所以可以再循环语句中使用
+class ShapeGenerator implements Generator<Shape>, Iterable<Shape> {
+    private Class[] types = { Circle.class, Square.class,
+            Triangle.class};
+    private static Random rand = new Random(47);
+    public ShapeGenerator() {}
+    // For iteration:
+    private int size = 0;
+    public ShapeGenerator(int sz) { size = sz; } 
+    public Shape next() {
+        try {
+            return (Shape)
+                    types[rand.nextInt(types.length)].newInstance();
+        // Report programmer errors at run time:
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    class ShapeIterator implements Iterator<Shape> {
+        int count = size;
+        public boolean hasNext() { return count > 0; }
+        public Shape next() {
+            count--;
+            return ShapeGenerator.this.next();
+        }
+        public void remove() { // Not implemented
+            throw new UnsupportedOperationException();
+        }
+    };
+    
+    // 迭代方法
+    @Override
+    public Iterator<Shape> iterator() {
+        return new ShapeIterator();
+    }
+    
+    public static void test() {
+        ShapeGenerator gen = new ShapeGenerator();
+        for(int i = 0; i < 5; i++)
+            System.out.println(gen.next());
+        for(Shape c : new ShapeGenerator(5))
+            System.out.println(c);
+    }
+}
+::<<
+
+下面的类是Generator<T>接口的另一个实现，负责生成Fibonacci数列：
+>>::
+class Fibonacci implements Generator<Integer> {
+    private int count = 0;
+    public Integer next() { return fib(count++); }
+    private int fib(int n) {
+        if(n < 2) return 1;
+        return fib(n-2) + fib(n-1);
+    }
+    public static void test(String[] args) {
+        Fibonacci gen = new Fibonacci();
+        for(int i = 0; i < 18; i++)
+            System.out.print(gen.next() + " ");
+    }
+} 
+/* Output:
+  1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584
+*///:~
+::<<
+
+下面编写一个实现了Iterable的Fibonacci生成器，通过继承来创建适配器类：
+>>::
+class IterableFibonacci extends Fibonacci implements Iterable<Integer> {
+  private int n;
+  public IterableFibonacci(int count) { n = count; }
+  
+  @Override
+  public Iterator<Integer> iterator() {
+    return new Iterator<Integer>() {
+      public boolean hasNext() { return n > 0; }
+      public Integer next() {
+        n--;
+        return IterableFibonacci.this.next();
+      }
+      public void remove() { // Not implemented
+        throw new UnsupportedOperationException();
+      }
+    };
+  } 
+  public static void test(String[] args) {
+    for(int i : new IterableFibonacci(18))
+      System.out.print(i + " ");
+  }
+} /* Output:
+1 1 2 3 5 8 13 21 34 55 89 144 233 377 610 987 1597 2584
+*///:~
+::<<
+
+
+4、泛型方法
+========
+
+4.1、杠杆利用类型参数推断
+------------------
+
+首先是一个静态方法：
+>>::
+class New1 {
+    public static <K, V> Map<K, V> map(){
+        return new HashMap<K, V>();
+    }
+    
+    // 然后可以这样创建一个Map：
+    public static void test(String[] args){
+        Map<String, List<Cat>> catMap = New.map();
+    }
+}
+::<<
+
+可以发现，右边的不用再按照以前的这种写法了：
+>>b:
+Map<String, List<Cat>> catMap = new HashMap<String, List<Cat>>();
+:b<<
+ 
+左边声明部分的类型为右边提供了一种推断，使得编译器可以直接创造出来具体的类了。不过，这种场景没有声明，直接使用New.map()是编译不通过的，因为没有像这里左边的可以推断的依据了， 如下面的，加入f()是一个方法，需要传入一个Map，如下的写法是编译不通过的：
+>>b:
+f(New.map());
+:b<<
+ 
+如果确实还是想按照上面那样使用，则可以考虑使用显示类型说明了，在操作符与方法名直接插入尖括号显示的指明类型，代码如下：
+>>b:
+F(New.<Person, List<Cat>>map());
+:b<<
+
+不过这种方式很少使用。也就是说，在编写非赋值语句时，才要这样的说明，而使用不了杠杆利用类型推断。
+
+我们为了方便，可以使用同样的方式创建其他的容器了，可惜JDK本身没有提供这样的类：
+>>::
+class New {
+    public static <K,V> Map<K,V> map() {
+      return new HashMap<K,V>();
+    }
+    public static <T> List<T> list() {
+      return new ArrayList<T>();
+    }
+    public static <T> LinkedList<T> lList() {
+      return new LinkedList<T>();
+    }
+    public static <T> Set<T> set() {
+      return new HashSet<T>();
+    } 
+    public static <T> Queue<T> queue() {
+      return new LinkedList<T>();
+    }
+    // Examples:
+    public static void test(String[] args) {
+      Map<String, List<String>> sls = New.map();
+      List<String> ls = New.list();
+      LinkedList<String> lls = New.lList();
+      Set<String> ss = New.set();
+      Queue<String> qs = New.queue();
+    }
+}
+::<<
+
+
+4.2、可变参数与泛型方法
+----------------
+
+可变参数也是可以使用泛型声明类型的：
+>>::
+class GenericVarargs {
+
+    public static <T> List<T> makeList(T... args){
+        List<T> result = new ArrayList<T>();
+        for(T item : args){
+            result.add(item);
+        }
+        return result;
+    }
+    public static void test(String[] args){
+        List<String> ls = makeList("Jay", "Mike");
+    }
+}
+::<<
+
+
+4.3、用于Generator的泛型方法
+-----------------------
+
+通过使用泛型方法，封装更加抽象的方法，比如下面的fill()，然后在使用的时候才传入需要使用的的具体对象：
+
+>>::
+class GenericGenerator{
+
+    public static <T> Collection<T> fill(
+            Collection<T> coll, Generator<T> gen, int n){
+        for(int i=0; i<n; i++){
+            coll.add(gen.next());
+        }
+        return coll;
+    }
+}
+
+public class Chapter15_4_3 {
+	public static void main(String[] args){
+	    Collection<Shape> shapes = GenericGenerator.fill(new ArrayList<Shape>(), new ShapeGenerator(), 2);
+        for(Shape a : shapes){
+            System.out.println(a);
+        }
+	}
+}
+::<<
+
+
+4.4、一个通用的Generator
+--------------------
+
+通过使用泛型类，我们更创建一个更加通用的生成器Generator。
+
+>>::
+class BasicGenerator<T> implements Generator<T> {
+
+    private Class<T> type;
+    public BasicGenerator(Class<T> type){
+        this.type = type;
+    }
+    
+    @Override
+    public T next() {
+        try {
+            return type.newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public static <T> Generator<T> create(Class<T> type){
+        return new BasicGenerator<T>(type);
+    }
+}
+::<<
+
+由于使用了newInstance()方法，所以这里生产的类必须要提供一个默认的无参构造函数。
+
+下面试验一下，创建一个对象，为了标示是新创建的对象，在类里面保存一个static的计数器，每创建一个对象就加1：
+>>::
+class CountObject {
+
+    private static long counter = 0;
+    private final long id = counter++;
+    public long id(){
+        return id;
+    }
+    public String toString(){
+        return "countObject" + id;
+    }
+    public static void test(String[] args){
+        Generator<CountObject> gen = BasicGenerator.create(CountObject.class);
+        for(int i=0; i<5; i++){
+            System.out.println(gen.next());
+        }
+    }
+}
+/*
+test 输入结果如下：
+countObject0
+countObject1
+countObject2
+countObject3
+countObject4
+*/
+::<<
+
+
+
+4.5、简化元组的使用
+--------------
+
+
+我们可以发现之前创建的元组，在使用的时候都传入了一长串具体的类型，通过杠杆利用类型推断参数，我们其实可以直接省略掉那一长串具体的类型了，添加一个static方法，可以使该方法成为更通用的类库的方法了：
+ 
+>>::
+class TupleTest2 {
+
+    public static<A,B,C> ThreeTuple<A,B,C> tuple(A a, B b, C c){
+        return new ThreeTuple<A,B,C>(a, b ,c);
+    }
+    
+}
+public class Chapter15_4_5 {
+    public static void main(String[] args){
+        // 根据左边的类型自动判断右边的类型，无需手动创建时指明类型了
+        ThreeTuple<Cat, Integer, String> tt = TupleTest2.tuple(new Cat(), 1, "Jason");
+        System.out.println(tt);
+    }
+}
+::<<
+
+
+4.6、一个Set实用工具
+----------------
+
+>>::1
+enum Watercolors {
+    ZINC, LEMON_YELLOW, MEDIUM_YELLOW, DEEP_YELLOW, ORANGE,
+    BRILLIANT_RED, CRIMSON, MAGENTA, ROSE_MADDER, VIOLET,
+    CERULEAN_BLUE_HUE, PHTHALO_BLUE, ULTRAMARINE,
+    COBALT_BLUE_HUE, PERMANENT_GREEN, VIRIDIAN_HUE,
+    SAP_GREEN, YELLOW_OCHRE, BURNT_SIENNA, RAW_UMBER,
+    BURNT_UMBER, PAYNES_GRAY, IVORY_BLACK
+}
+
+class WatercolorSets {
+    public static void main(String[] args) {
+        Set<Watercolors> set1 =
+                EnumSet.range(Watercolors.BRILLIANT_RED, Watercolors.VIRIDIAN_HUE);
+        Set<Watercolors> set2 =
+                EnumSet.range(Watercolors.CERULEAN_BLUE_HUE, Watercolors.BURNT_UMBER);
+        System.out.println("set1: " + set1);
+        System.out.println("set2: " + set2);
+        System.out.println("union(set1, set2): " + union(set1, set2));
+        Set<Watercolors> subset = intersection(set1, set2);
+        System.out.println("intersection(set1, set2): " + subset);
+        System.out.println("difference(set1, subset): " +
+                difference(set1, subset));    
+        System.out.println("difference(set2, subset): " +
+                difference(set2, subset));
+        System.out.println("complement(set1, set2): " +
+                complement(set1, set2));
+    } 
+} /* Output: (Sample)
+  set1: [BRILLIANT_RED, CRIMSON, MAGENTA, ROSE_MADDER, VIOLET, CERULEAN_BLUE_HUE, PHTHALO_BLUE, ULTRAMARINE, COBALT_BLUE_HUE, PERMANENT_GREEN, VIRIDIAN_HUE]
+  set2: [CERULEAN_BLUE_HUE, PHTHALO_BLUE, ULTRAMARINE, COBALT_BLUE_HUE, PERMANENT_GREEN, VIRIDIAN_HUE, SAP_GREEN, YELLOW_OCHRE, BURNT_SIENNA, RAW_UMBER, BURNT_UMBER]
+  union(set1, set2): [SAP_GREEN, ROSE_MADDER, YELLOW_OCHRE, PERMANENT_GREEN, BURNT_UMBER, COBALT_BLUE_HUE, VIOLET, BRILLIANT_RED, RAW_UMBER, ULTRAMARINE, BURNT_SIENNA, CRIMSON, CERULEAN_BLUE_HUE, PHTHALO_BLUE, MAGENTA, VIRIDIAN_HUE]
+  intersection(set1, set2): [ULTRAMARINE, PERMANENT_GREEN, COBALT_BLUE_HUE, PHTHALO_BLUE, CERULEAN_BLUE_HUE, VIRIDIAN_HUE]
+  difference(set1, subset): [ROSE_MADDER, CRIMSON, VIOLET, MAGENTA, BRILLIANT_RED]
+  difference(set2, subset): [RAW_UMBER, SAP_GREEN, YELLOW_OCHRE, BURNT_SIENNA, BURNT_UMBER]
+  complement(set1, set2): [SAP_GREEN, ROSE_MADDER, YELLOW_OCHRE, BURNT_UMBER, VIOLET, BRILLIANT_RED, RAW_UMBER, BURNT_SIENNA, CRIMSON, MAGENTA]
+  *///:~
+::<<
+
+下面的示例使用Sets.difference() 打印出 java.util包中各种Collection类与Map类之间的方法差异：
+
+>>::
+class ContainerMethodDifferences {
+    static Set<String> methodSet(Class<?> type) {
+      Set<String> result = new TreeSet<String>();
+      for(Method m : type.getMethods())
+        result.add(m.getName());
+      return result;
+    }
+    static void interfaces(Class<?> type) {
+      System.out.print("Interfaces in " +
+        type.getSimpleName() + ": ");
+      List<String> result = new ArrayList<String>();
+      for(Class<?> c : type.getInterfaces())
+        result.add(c.getSimpleName());
+      System.out.println(result);
+    }
+    static Set<String> object = methodSet(Object.class);
+    static { object.add("clone"); }
+    static void
+    difference(Class<?> superset, Class<?> subset) {
+      System.out.print(superset.getSimpleName() +
+        " extends " + subset.getSimpleName() + ", adds: ");
+      Set<String> comp = Sets.difference(
+        methodSet(superset), methodSet(subset));
+      comp.removeAll(object); // Don't show 'Object' methods
+      System.out.println(comp);
+      interfaces(superset);
+    }
+    public static void test(String[] args) {
+      System.out.println("Collection: " +
+        methodSet(Collection.class));
+      interfaces(Collection.class);
+      difference(Set.class, Collection.class);
+      difference(HashSet.class, Set.class);
+      difference(LinkedHashSet.class, HashSet.class);
+      difference(TreeSet.class, Set.class);
+      difference(List.class, Collection.class);
+      difference(ArrayList.class, List.class);
+      difference(LinkedList.class, List.class);
+      difference(Queue.class, Collection.class);
+      difference(PriorityQueue.class, Queue.class);
+      System.out.println("Map: " + methodSet(Map.class));
+      difference(HashMap.class, Map.class);
+      difference(LinkedHashMap.class, HashMap.class);
+      difference(SortedMap.class, Map.class);
+      difference(TreeMap.class, Map.class);
+    }
+}
+::<<
+
+
+5、匿名内部类
+=========
+
+泛型方法还可以应用于内部类和匿名内部类，下面是使用匿名内部类实现Generator接口的例子：
+
+>>::
+class Customer {
+    private static long counter = 1;
+    private final long id = counter++;
+    // private 构造器，强制你使用Generator类的generator方法生成对象
+    private Customer() {}
+    public String toString() { return "Customer " + id; }
+    // A method to produce Generator objects:
+    public static Generator<Customer> generator() {
+        return new Generator<Customer>() {
+            public Customer next() { return new Customer(); }
+        };
+    }
+}   
+
+class Teller {
+    private static long counter = 1;
+    private final long id = counter++;
+    private Teller() {}
+    public String toString() { return "Teller " + id; }
+    // A single Generator object:
+    public static Generator<Teller> generator =
+            new Generator<Teller>() {
+        public Teller next() { return new Teller(); }
+    };
+}   
+
+class BankTeller {
+    public static void serve(Teller t, Customer c) {
+        System.out.println(t + " serves " + c);
+    }
+    public static void main(String[] args) {
+      Random rand = new Random(47);
+      Queue<Customer> line = new LinkedList<Customer>();
+      Generators.fill(line, Customer.generator(), 15);
+      List<Teller> tellers = new ArrayList<Teller>();
+      Generators.fill(tellers, Teller.generator, 4);
+      for(Customer c : line)
+        serve(tellers.get(rand.nextInt(tellers.size())), c);
+    } 
+} /* Output:
+  Teller 3 serves Customer 1
+  Teller 2 serves Customer 2
+  Teller 3 serves Customer 3
+  Teller 1 serves Customer 4
+  Teller 1 serves Customer 5
+  Teller 3 serves Customer 6
+  Teller 1 serves Customer 7
+  Teller 2 serves Customer 8
+  Teller 3 serves Customer 9
+  Teller 3 serves Customer 10
+  Teller 2 serves Customer 11
+  Teller 4 serves Customer 12
+  Teller 2 serves Customer 13
+  Teller 1 serves Customer 14
+  Teller 1 serves Customer 15
+  *///:~
+::<<
+
+6、构建复杂模型
+==========
+
+泛型的一个重要好处是能够简单而安全地创建复杂的模型，例如很容易的创建List元组：
+
+>>::
+class TupleList<A,B,C,D>
+    extends ArrayList<FourTuple<A,B,C,D>> {
+    public static void main(String[] args) {
+        TupleList<Circle, Square, String, Integer> tl =
+                new TupleList<Circle, Square, String, Integer>();
+        tl.add(TupleTest.h());
+        tl.add(TupleTest.h());
+        for(FourTuple<Circle,Square,String,Integer> i: tl)
+            System.out.println(i);
+    }
+} /* Output: (75% match)
+(Circle, com.itzhai.javanote.chapter_15_Generics.Square@1befab0, hi, 47)
+(Circle, com.itzhai.javanote.chapter_15_Generics.Square@13c5982, hi, 47)
+*///:~
+::<<
+
+
+下面一个实例展示使用泛型类型来构建复杂模型是多么简单的事情
+>>::
+class Product {
+    private final int id;
+    private String description;
+    private double price;
+    public Product(int IDnumber, String descr, double price){
+      id = IDnumber;
+      description = descr;
+      this.price = price;
+      System.out.println(toString());
+    }
+    public String toString() {
+      return id + ": " + description + ", price: $" + price;
+    }
+    public void priceChange(double change) {
+      price += change;
+    }
+    public static Generator<Product> generator =
+      new Generator<Product>() {
+        private Random rand = new Random(47);
+        public Product next() {
+          return new Product(rand.nextInt(1000), "Test",
+                Math.round(rand.nextDouble() * 1000.0) + 0.99);
+        }
+    };
+}
+    
+class Shelf extends ArrayList<Product> {
+    public Shelf(int nProducts) {
+        Generators.fill(this, Product.generator, nProducts);
+    }
+}   
+
+class Aisle extends ArrayList<Shelf> {
+    public Aisle(int nShelves, int nProducts) {
+      for(int i = 0; i < nShelves; i++)
+        add(new Shelf(nProducts));
+    }
+}
+
+class CheckoutStand {}
+class Office {}
+
+public class Store extends ArrayList<Aisle> {
+    private ArrayList<CheckoutStand> checkouts =
+            new ArrayList<CheckoutStand>();
+    private Office office = new Office();
+    public Store(int nAisles, int nShelves, int nProducts) {
+        for(int i = 0; i < nAisles; i++)
+            add(new Aisle(nShelves, nProducts));
+    }
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        for(Aisle a : this)
+            for(Shelf s : a)
+                for(Product p : s) {
+                    result.append(p);
+                result.append("\n");
+                }
+        return result.toString();
+    }
+    public static void main(String[] args) {
+        System.out.println(new Store(14, 5, 10));
+    }
+} /* Output:
+  258: Test, price: $400.99
+  861: Test, price: $160.99
+  868: Test, price: $417.99
+  207: Test, price: $268.99
+  551: Test, price: $114.99
+  278: Test, price: $804.99
+  520: Test, price: $554.99
+  140: Test, price: $530.99
+  ...
+  *///:~
+
+public class Chapter15_6 {
+	public static void main(String[] args){
+	    TupleList.main(args);
+	}
+}
+::<<
+
+
+
+7、擦除的神秘之处
+============
+
+看个奇怪的问题，考虑下面输出的结果：
+
+>>b:
+>>pre:
+Class c1 = new ArrayList<String>().getClass();
+Class c2 = new ArrayList<Integer>().getClass();
+System.out.println(c1 == c2);
+:pre<<
+:b<<
+
+输出的结果竟然是true。
+
+下面我们用Class.getTypeParameters()方法返回TypeVariable对象数组看个究竟：
+
+>>b:
+>>pre::
+System.out.println(Arrays.toString(c1.getTypeParameters()));
+System.out.println(Arrays.toString(c2.getTypeParameters()));
+:pre<<
+:b<<
+
+我们发现输出结果为：
+>>b:
+>>pre:
+[E]
+[E]
+:pre<<
+:b<<
+
+这里只是参数的占位符，所以，在泛型代码内部，无法获得任何有关泛型参数类型的信息。你可以知道诸如类型参数标示符和泛型类型边界这类信息，但却无法知道用来创建某个特定实例的实际的类型参数。Java中的泛型是使用擦除来实现的，所以在使用泛型的时候，任何具体的类型信息都被擦除了，只知道当前使用的是一个对象。所以上面才会出现相等的情况。
+
+
+7.1、C++的方式
+------------
+
+查看下面的一段C++的泛型代码：
+>>::
+#include <iostream>
+using namespace std;
+
+template<class T> class Manipulator {
+  T obj;
+public:
+  Manipulator(T x) { obj = x; }
+  void manipulate() { obj.f(); }
+};
+
+class HasF {
+public:
+  void f() { cout << "HasF::f()" << endl; }
+};
+
+int main() {
+  HasF hf;
+  Manipulator<HasF> manipulator(hf);
+  manipulator.manipulate();
+} /* Output:
+HasF::f()
+::<<
+
+
+C++编写的泛型，当模板被实例化时，模板代码知道其模板参数的类型，C++编译器将进行检查，如果泛型对象调用了一个当前实例化对象不存在的方法，则报一个编译期错误。例如上面的manipulate里面调用了obj.f()，因为实例化的HasF存在这个方法，所以不会报错。
+
+而Java是使用擦除实现泛型的，在没有指定边界的情况下，是不能在泛型类里面直接调用泛型对象的方法的，如下面的例子：
+>>::
+public class Manipulator<T> {
+
+    private T obj;
+    public Manipulator(T x){
+        obj = x;
+    }
+    public void doSomething(){
+        obj.f();  // 编译错误
+    }
+}
+::<<
+
+通过没有边界的obj调用f()，编译出错了，下面指定边界，让其通过编译：
+>>::
+public class Manipulator<T extends HasF> {
+
+    private T obj;
+    public Manipulator(T x){
+        obj = x;
+    }
+    public void doSomething(){
+        obj.f();  // 编译错误
+    }
+}
+class HasF{
+    public void f(){
+        System.out.println("HasF.f();");
+    }
+}
+::<<
+
+上面的例子，把泛型类型参数擦除到了HasF，就好像在类的声明中用HasF替换了T一样。
+
+
+
+7.2、迁移兼容性
+-----------
+
+泛型是JDK1.5才出现的，所以为了兼容，采用了擦除的方式实现。泛型类型只有在静态类型检查期间才出现，在此之后，程序中所有泛型类型都被擦除，替换为他们的非泛型上界。例如List<T>将被擦除为List，而普通的类型变量在未指定边界的情况下将被擦除为Object。
+
+
+7.3、擦除的问题
+-----------
+
+擦除使得现有的非泛型客户端代码能够在不改变的情况下继续使用，直至客户端准备好用泛型重写这些代码。
+
+但是擦除的代价也是显著的，泛型不能用于显式的引用运行时类型的操作中，如转型，instanceof和new操作符，因为所有关于参数的类型信息都丢失了。无论何时当你在编写泛型代码时，必须时刻提醒自己，你只是看起来好像拥有有关参数的类型信息而已，实际上，它只是一个Object。
+
+当要使用@SuppressWarnings("unchecked") 关闭警告时，最好尽量地“聚焦”，这样就不会因为过于宽泛地关闭警告，而导致意外的屏蔽掉真正的问题。
+
+下面的Derived3的错误意味着编译器期望得到一个原生基类，当你希望将参数类型不要仅仅当做Object处理时，需要付出额外努力来管理边界。
+>>::
+class GenericBase<T> {
+    private T element;
+    public void set(T arg) { arg = element; }
+    public T get() { return element; }
+}
+
+class Derived1<T> extends GenericBase<T> {}
+
+class Derived2 extends GenericBase {} // No warning
+
+// class Derived3 extends GenericBase<?> {}
+// Strange error:
+//   unexpected type found : ?
+//   required: class or interface without bounds    
+
+class ErasureAndInheritance {
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        Derived2 d2 = new Derived2();
+        Object obj = d2.get();
+        d2.set(obj); // Warning here!
+    }
+} ///:~
+::<<
+
+
+
+7.4、边界处的动作
+-------------
+
+>>::
+class GenericHolder<T> {
+    private T obj;
+    public void set(T obj) { this.obj = obj; }
+    public T get() { return obj; }
+    public static void main(String[] args) {
+        GenericHolder<String> holder =
+                new GenericHolder<String>();
+        holder.set("Item");
+        String s = holder.get();
+    }
+}
+::<<
+
+上面的代码的set()方法会在编译期接受检查，而get()的时候直接取出了String类型，其实此处还是会进行转型的，只不过是由编译器自动插入的相当于插入了这样的代码：(String)holder.get()，详细的转型处理可以编译成字节码查看。
+
+
+
+8、擦除的补偿
+=========
+
+正因为类型信息被擦除了，所以和类型相关的代码都无法工作了，如下的：
+
+>>::
+class Erased<T> {
+    private static final int SIZE = 100;
+    public static void f(Object arg) {
+        if(arg instanceof T) {}          // Error
+        T var = new T();                 // Error
+        T[] array = new T[SIZE];         // Error
+        T[] array = (T)new Object[SIZE]; // Unchecked warning
+    }
+}
+::<<
+
+上面的instanceof方法也没法使用了额，为了在泛型类中能够判断类型，可以引入类型标签：
+>>::
+class ClassTypeCapture<T> {
+
+    Class<T> kind;
+    public ClassTypeCapture(Class<T> kind){
+        this.kind = kind;
+    }
+    public boolean f(Object arg){
+        return kind.isInstance(arg);
+    }
+    public static void main(String[] args){
+        ClassTypeCapture<String> ctc = new ClassTypeCapture<String>(String.class);
+        System.out.println(ctc.f("art")); // true
+        System.out.println(ctc.f(1));  // false
+    }
+}
+::<<
+
+
+8.1、创建类型实例
+------------
+
+我们怎么在一个泛型类中创建泛型的对象呢，上面直接创建的方法也是编译不通过的？我们可以使用泛型工厂的方式。可以保存一个类型标签，使用Class.newInstance()的方式，创建泛型的对象， 但是这种情况，传入的类型标签对应的类必须要有构造函数，所以不推荐这样干，下面说说显示的工厂这种方法（限制其类型，使得只能接受实现了这个工厂的类）：
+ 
+首先来创建一个工厂接口：
+
+>>::
+interface Factory<T> {
+    T create();
+}
+::<<
+
+
+接下来创建一个对象，里面包含了一个需要使用工厂创建的泛型对象：
+>>::
+class Foo<T> {
+    private T x;
+    public <F extends Factory<T>> Foo(F factory){
+        x = factory.create();
+    }
+}
+::<<
+
+接下来创建显示的工厂：
+>>::
+class IntegerFactory implements Factory<Integer>{
+    @Override
+    public Integer create() {
+        return new Integer(0);
+    }
+}
+class Widget {
+    public static class WFactory implements Factory<Widget>{
+        @Override
+        public Widget create() {
+            return new Widget();
+        }
+    }
+}
+::<<
+
+这样子我们就可以创建泛型类中的泛型对象了，通过传入上面的显示工厂：
+>>::
+public class Chapter15_8_1 {
+	public static void main(String[] args){
+	    new Foo<Integer>(new IntegerFactory());
+	    new Foo<Widget>(new Widget.WFactory());
+	    
+	    // TODO 模板方法设计模式
+	}
+}
+::<<
+
+
+
+8.2、泛型数组
+----------
+
+从上面Erased的例子中可以看出，不能直接创建泛型数组，一般使用ArrayList替代。
+>>::
+class ListOfGenerics<T> {
+    private List<T> array = new ArrayList<T>();
+    public void add(T item) { array.add(item); }
+    public T get(int index) { return array.get(index); }
+}
+
+class Generic<T> {}
+::<<
+
+但是可以按照编译器喜欢的方式来定义一个引用，却永远都不能创建这个确切类型的数组。
+>>::
+class ArrayOfGenericReference {
+    static Generic<Integer>[] gia;
+} 
+::<<
+
+不能创建这个确切类型的数组
+
+>>::
+class ArrayOfGeneric {
+    static final int SIZE = 100;
+    static Generic<Integer>[] gia;
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+      gia = (Generic<Integer>[])new Object[SIZE];  // 编译通过，运行报ClassCastException错误，因为数组将跟踪它们的实际类型，而这个类型是在数组被创建时确定的。
+      // Runtime type is the raw (erased) type:
+      gia = new Generic<Integer>[SIZE];  // 不能这样创建，Cannot create a generic array of Generic<Integer>
+      gia = (Generic<Integer>[])new Generic[SIZE];  // 成功创建泛型数组的唯一方法就是创建一个被擦除类型的新数组，然后对其转型。
+      System.out.println(gia.getClass().getSimpleName());  // Generic[]
+      gia[0] = new Generic<Integer>();
+      gia[1] = new Object();  // 错误：cannot convert from Object to Generic<Integer>
+      gia[2] = new Generic<Double>();  // 错误：cannot convert from Generic<Double> to Generic<Integer>
+    }
+}
+::<<
+
+下面是一个泛型数组包装器
+>>::
+class GenericArray<T> {
+    private T[] array;
+    @SuppressWarnings("unchecked")
+    public GenericArray(int sz) {
+        array = (T[])new Object[sz];
+    }
+    public void put(int index, T item) {
+        array[index] = item;
+    }
+    public T get(int index) { return array[index]; }
+    // Method that exposes the underlying representation:
+    public T[] rep() { return array; }    
+    public static void main(String[] args) {
+        GenericArray<Integer> gai =
+                new GenericArray<Integer>(10);
+        // This causes a ClassCastException:
+        Integer[] ia = gai.rep(); // 返回T[]，运行报ClassCastException，还是因为实际的运行时类型是Object[]
+        // This is OK:
+        Object[] oa = gai.rep();
+    }
+}
+::<<
+
+因为有了擦除，数组的运行时类型就只能是Object[]，如果我们立即将其转型为T[]，在编译期该数组的实际类型就会丢失，而编译器可能会错过某些潜在的错误检查。正因为这样，最好是在集合内部使用Object[]，当使用数组元素时，添加一个对T的类型转换
+
+>>::
+class GenericArray2<T> {
+    private Object[] array;
+    public GenericArray2(int sz) {
+        array = new Object[sz];
+    }
+    public void put(int index, T item) {
+        array[index] = item;
+    }
+    @SuppressWarnings("unchecked")
+    public T get(int index) { return (T)array[index]; }
+    @SuppressWarnings("unchecked")
+    public T[] rep() {
+        return (T[])array; // Warning: unchecked cast
+    } 
+    public static void main(String[] args) {
+        GenericArray2<Integer> gai =
+                new GenericArray2<Integer>(10);
+        for(int i = 0; i < 10; i ++)
+            gai.put(i, i);
+        for(int i = 0; i < 10; i ++)
+            System.out.print(gai.get(i) + " ");
+        System.out.println();
+        try {
+            Integer[] ia = gai.rep(); // 这里仍将报转型错误，因此，没有任何方式可以推翻底层的数组类型，它只能是Object[]
+        } catch(Exception e) { System.out.println(e); }
+    }
+} /* Output: (Sample)
+0 1 2 3 4 5 6 7 8 9
+java.lang.ClassCastException: [Ljava.lang.Object; cannot be cast to [Ljava.lang.Integer;
+*///:~
+::<<
+
+可以传递一个类型标记，使得rep()方法可以工作：
+
+>>::
+class GenericArrayWithTypeToken<T> {
+    private T[] array;
+    @SuppressWarnings("unchecked")
+    public GenericArrayWithTypeToken(Class<T> type, int sz) {
+        array = (T[])Array.newInstance(type, sz);
+    }
+    public void put(int index, T item) {
+        array[index] = item;
+    }
+    public T get(int index) { return array[index]; }
+    // Expose the underlying representation:
+    public T[] rep() { return array; }    
+    public static void main(String[] args) {
+        GenericArrayWithTypeToken<Integer> gai =
+                new GenericArrayWithTypeToken<Integer>(
+                        Integer.class, 10);
+        // This now works:
+        Integer[] ia = gai.rep();
+    }
+} ///:~
+::<<
+
+
+9、边界
+---------
+
+使用无界泛型调用的方法只能是Object可以调用的方法，如果能够将参数类型限定为某个类型子集，就可以用这些类型子集来调用方法了。
+
+使用extends关键字给泛型声明添加边界：
+
+>>::
+interface Animal{
+    public void speek();
+}
+interface Fish{
+    public void bubble();
+}
+class GoldenFish implements Animal, Fish{
+    @Override
+    public void bubble() {
+        System.out.println("O。.");
+    }
+    @Override
+    public void speek() {
+        System.out.println("wow~");
+    }
+}
+class HoldItem<T>{
+    T item;
+    HoldItem(T item){ this.item = item; }
+    T getItem() { return item; }
+}
+class Item1<T extends Animal & Fish> extends HoldItem<T>{
+    Item1(T item){ super(item); }
+    public void doSomething(){
+        item.speek();
+        item.bubble();
+    }
+}
+
+public class Chapter15_9 {
+	public static void main(String[] args){
+	    GoldenFish fish = new GoldenFish();
+	    // 创建泛型类，super关键字对应的类继承结构
+	    Item1<GoldenFish> item1 = new Item1<GoldenFish>(fish);
+	    item1.doSomething();
+	}
+}
+::<<
+
+
+
+10、通配符
+=======
+
+泛型参数表达式中的问号。
+
+首先来看一个例子，可以向导出类型Apple的数组，赋予基类型的数组引用：
+
+>>::
+class Fruit {}
+class Apple extends Fruit {}
+class Jonathan extends Apple {}
+class Orange extends Fruit {}
+
+class CovariantArrays {
+  public static void main(String[] args) {
+    Fruit[] fruit = new Apple[10];
+    fruit[0] = new Apple(); // OK
+    fruit[1] = new Jonathan(); // OK
+    // Runtime type is Apple[], not Fruit[] or Orange[]:
+    try {
+      // Compiler allows you to add Fruit:
+      // 运行时抛出异常，此时的数组机制知道它处理的是Apple[]
+      fruit[0] = new Fruit(); // ArrayStoreException
+    } catch(Exception e) { System.out.println(e); }
+    try {
+      // Compiler allows you to add Oranges:
+      fruit[0] = new Orange(); // ArrayStoreException
+    } catch(Exception e) { System.out.println(e); }
+  }
+} /* Output:
+java.lang.ArrayStoreException: Fruit
+java.lang.ArrayStoreException: Orange
+*///:~
+::<<
+
+
+我们使用泛型来替代数组，使得错误可以再编译期可以检测到：
+
+>>::
+class NonCovariantGenerics {
+    // Compile Error: incompatible types:
+    List<Fruit> flist = new ArrayList<Apple>();
+}
+::<<
+
+
+泛型是不会自动向上转型的，不能把一个涉及Apple的泛型赋给一个涉及Fruit的泛型。
+
+有时候你想要在两个类型之间建立某种类型的向上转型关系，这正是通配符所允许的：
+
+>>::
+class GenericsAndCovariance {
+    public static void main(String[] args) {
+        // Wildcards allow covariance:
+        // List<? extends Fruit>：具有任何从Fruit继承的类型的列表，但是为了向上转型为flist，这个类型是什么并没有人关心
+        // 怎样才能安全地向其中添加对象呢？
+        List<? extends Fruit> flist = new ArrayList<Apple>();
+        // Compile Error: can't add any type of object:
+        // flist.add(new Apple());
+        // flist.add(new Fruit());  即使 创建  flist的时候使用 new ArrayList<Fruit>(); 也不可以成功添加
+        // flist.add(new Object());
+        flist.add(null); // Legal but uninteresting
+        // We know that it returns at least Fruit: 可以向上转型为父类
+        Fruit f = flist.get(0);
+    }
+}
+::<<
+
+
+
+10.1、编译器有多聪明
+---------------
+
+使用了 ? extends Fruit 的泛型的方法参数，将不能传入任何具体的参数。
+
+>>::
+class CompilerIntelligence {
+    public static void main(String[] args) {
+        // 声明了 List<? extends Fruit> ，编译器不能了解这里需要Fruit的哪个具体子类型，因此不会接受任何类型的Fruit，
+        // add()方法的参数就变成了“? extends Fruit”，不能加入任何的元素
+        List<? extends Fruit> flist =
+                Arrays.asList(new Apple());
+        // 但是却可以进行转型
+        Apple a = (Apple)flist.get(0); // No warning
+        // contains 和 indexOf方法参数类型是Object，因此不涉及任何通配符，编译器允许这个调用。
+        // 这意味着将由泛型类的设计者来决定哪些调用时安全的，并使用Object类型作为其参数类型
+        flist.contains(new Apple()); // Argument is 'Object'
+        flist.indexOf(new Apple()); // Argument is 'Object'
+    }
+}
+::<<
+
+
+为了在类型中使用了通配符的情况系禁止contains的这类调用，我们需要在参数列表中使用类型参数
+>>::
+class Holder<T> {
+    private T value;
+    public Holder() {}
+    public Holder(T val) { value = val; }
+    public void set(T val) { value = val; }
+    public T get() { return value; }
+    public boolean equals(Object obj) {
+        return value.equals(obj);
+    } 
+    public static void main(String[] args) {
+        Holder<Apple> Apple = new Holder<Apple>(new Apple());
+        Apple d = Apple.get();
+        Apple.set(d);
+        // 普通的泛型Holder<Apple>不能进行向上转型赋值为Holder<Fruit>
+        // Holder<Fruit> Fruit = Apple; // Cannot upcast
+        // 但是可以向上转型为Holder<? extends Fruit>
+        Holder<? extends Fruit> fruit = Apple; // OK
+        // 在使用get的时候，如果知道更具体的信息，就可以转换为具体的子类了，但也存在这转换异常的风险。
+        Fruit p = fruit.get();
+        d = (Apple)fruit.get(); // Returns 'Object'
+        try {
+            Orange c = (Orange)fruit.get(); // No warning
+        } catch(Exception e) { System.out.println(e); }
+        // 跟上例类型，set不能按照如下调用
+        // fruit.set(new Apple()); // Cannot call set()
+        // fruit.set(new Fruit()); // Cannot call set()
+        // equals接受的是Object，所以也能正常运行
+        System.out.println(fruit.equals(d)); // OK
+    }
+} 
+/* Output: (Sample)
+  java.lang.ClassCastException: Apple cannot be cast to Orange
+  true
+*///:~
+::<<
+
+
+
+10.2、逆变
+--------
+
+超类型通配符:可以声明通配符是由某个特定类的rene积累来界定的 <? super MyClass>，也可以使用类型参数 <? super T>这使得你可以安全的传递一个类型对象到泛型类型中，因此，有了超类型通配符，就可以向Collection写入了：
+
+>>::
+class SuperTypeWildcards {
+    // Apple是下界
+    static void writeTo(List<? super Apple> apples) {
+        apples.add(new Apple());
+        apples.add(new Jonathan());
+      // apples.add(new Fruit()); // Error
+    }
+}
+::<<
+
+根据如何能够向一个泛型类型“写入”（传递给一个方法），以及如何能够从一个泛型类型中“读取”（从一个方法中返回），来着手思考子类型和超类型边界？
+
+超类型边界放松了在可以向方法传递的参数上所作的限制
+
+>>::
+class GenericWriting {
+    static <T> void writeExact(List<T> list, T item) {
+        list.add(item);
+    }
+    static List<Apple> apples = new ArrayList<Apple>();
+    static List<Fruit> fruit = new ArrayList<Fruit>();
+    static void f1() {
+        writeExact(apples, new Apple());
+        // writeExact(fruit, new Apple()); // Error:
+        // Incompatible types: found Fruit, required Apple
+    }
+    static <T> void writeWithWildcard(List<? super T> list, T item) {
+        list.add(item);
+    }
+    static void f2() {
+        writeWithWildcard(apples, new Apple());
+        // 使用超类型边界之后，可以把Apple添加到类型为Fruit的list中了
+        writeWithWildcard(fruit, new Apple());
+    }
+    public static void main(String[] args) { f1(); f2(); }
+}
+::<<
+
+下面继续看一个关于协变和通配符的例子
+>>::
+class GenericReading {
+    // readExact使用了精确类型
+    static <T> T readExact(List<T> list) {
+        return list.get(0);
+    }
+    static List<Apple> apples = Arrays.asList(new Apple());
+    static List<Fruit> fruit = Arrays.asList(new Fruit());
+    // A static method adapts to each call:
+    static void f1() {
+        Apple a = readExact(apples);
+        Fruit f = readExact(fruit);
+        f = readExact(apples);
+    }
+    // 如果有一个泛型类，当你创建这个类的实例时，要为这个类确定参数，就像在f2()中看到的，确定了类型后，就不能传递其他类型 的参数了。
+    static class Reader<T> {
+        T readExact(List<T> list) { return list.get(0); }
+    } 
+    static void f2() {
+        Reader<Fruit> fruitReader = new Reader<Fruit>();
+        Fruit f = fruitReader.readExact(fruit);
+        // Fruit a = fruitReader.readExact(apples); // Error:
+        // readExact(List<Fruit>) cannot be
+        // applied to (List<Apple>).
+    }
+    // 为了解决这个问题，可以考虑使用子类型边界(向上转换为T，超类边界是为了让具体的子类可用)
+    static class CovariantReader<T> {
+        T readCovariant(List<? extends T> list) {
+            return list.get(0);
+        }
+    }
+    static void f3() {
+        CovariantReader<Fruit> fruitReader =
+                new CovariantReader<Fruit>();
+        Fruit f = fruitReader.readCovariant(fruit);
+        Fruit a = fruitReader.readCovariant(apples);
+    } 
+    public static void main(String[] args) {
+        f1(); f2(); f3();
+    }
+} ///:~
+::<<
+
+
+
+10.3、无边界通配符
+-------------
+
+无界通配符<?>看起来意味着“任何事物”，因此使用无界通配符好像等价于使用原生类型。
+
+编译器初看起来是支持这种判断的：
+
+>>::
+class UnboundedWildcards1 {
+    static List list1;
+    static List<?> list2;
+    static List<? extends Object> list3;
+    static void assign1(List list) {
+      list1 = list;
+      list2 = list;
+      // list3 = list; // Warning: unchecked conversion  可以看出<?>和<? extends Object>是不同的
+      // Found: List, Required: List<? extends Object>
+    }
+    static void assign2(List<?> list) {
+      list1 = list;
+      list2 = list;
+      list3 = list;
+    } 
+    static void assign3(List<? extends Object> list) {
+      list1 = list;
+      list2 = list;
+      list3 = list;
+    }
+    public static void main(String[] args) {
+      assign1(new ArrayList());
+      assign2(new ArrayList());
+      // assign3(new ArrayList()); // Warning:
+      // Unchecked conversion. Found: ArrayList
+      // Required: List<? extends Object>
+      assign1(new ArrayList<String>());
+      assign2(new ArrayList<String>());
+      assign3(new ArrayList<String>());
+      // Both forms are acceptable as List<?>:
+      List<?> wildList = new ArrayList();
+      wildList = new ArrayList<String>();
+      assign1(wildList);
+      assign2(wildList);
+      assign3(wildList);
+    }
+} 
+::<<
+
+
+在这些情况中，<?>可以被认为是一种装饰，但它仍旧很有价值，声明了“我是想用Java的泛型来编写这段代码，我在这里并不是要用原生类型但在这种情况下，泛型参数可以持有任何类型。”
+
+下面展示无界通配符的一个重要应用：当处理多个泛型参数时有时允许一个参数可以是任何类型，同时为其他参数确定某种特定类型的这种能力会显得很重要：
+>>::
+class UnboundedWildcards2 {
+    static Map map1;
+    static Map<?,?> map2;
+    static Map<String,?> map3;
+    static void assign1(Map map) { map1 = map; }
+    // 当全是通配符时，编译器就无法将其与原生Map区分开来了
+    static void assign2(Map<?,?> map) { map2 = map; }
+    static void assign3(Map<String,?> map) { map3 = map; }
+    public static void main(String[] args) {
+      assign1(new HashMap());
+      assign2(new HashMap());
+      // assign3(new HashMap()); // Warning:
+      // Unchecked conversion. Found: HashMap
+      // Required: Map<String,?>
+      assign1(new HashMap<String,Integer>());
+      assign2(new HashMap<String,Integer>());
+      assign3(new HashMap<String,Integer>());
+    }
+}
+::<<
+
+List<Object>与List<?>的区别：
+>>ul:
+>>li:List表示持有任何Object类型的原生List
+>>li:List<?>表示具有某种特定类型的非原生List，只是我们不知道那种类型是什么
+:ul<<
+
+编译器什么时候才会关注原生类型和涉及无界通配符的类型之间的差异呢？
+
+下面用例子演示下：
+
+>>::
+class Wildcards {
+    // Raw argument:
+    // Holder是一个泛型类，这里表示称原生类型，但是编译器仍就知道向set传递一个Object是不安全的。
+   static void rawArgs(Holder holder, Object arg) {
+     // holder.set(arg); // Warning:
+     //   Unchecked call to set(T) as a
+     //   member of the raw type Holder
+     // holder.set(new Wildcards()); // Same warning
+
+     // Can't do this; don't have any 'T':
+     // T t = holder.get();
+
+     // OK, but type information has been lost:
+     Object obj = holder.get();
+   } 
+   // Similar to rawArgs(), but errors instead of warnings:
+   // 这里演示了<?>和原生类型是不同的：
+   static void unboundedArg(Holder<?> holder, Object arg) {
+     // 原生Holder将持有任何类型的组合，而Holder<?>将持有具有某种具体类型的同构集合，因此不能只是向其中传递Object
+     holder.set(arg); // Error:
+     //   set(capture of ?) in Holder<capture of ?>
+     //   cannot be applied to (Object)
+     // holder.set(new Wildcards()); // Same error
+
+     // Can't do this; don't have any 'T':
+     // T t = holder.get();
+
+     // OK, but type information has been lost:
+     Object obj = holder.get();
+   } 
+   static <T> T exact1(Holder<T> holder) {
+     T t = holder.get();
+     return t;
+   }
+   static <T> T exact2(Holder<T> holder, T arg) {
+     holder.set(arg);
+     T t = holder.get();
+     return t;
+   }
+   // 在Holder类型上的限制被放松为包括持有任何扩展自T的对象的Holder，
+   // 传入了Holder<Apple>之后，为了防止将Orange放置到Holder<Apple>,
+   // 对set的调用都是不允许的，但是你仍旧知道任何来自Holder<? extends Fruit的对象至少是Fruit，因此get()是允许的
+   static <T> T wildSubtype(Holder<? extends T> holder, T arg) {
+     // holder.set(arg); // Error:
+     //   set(capture of ? extends T) in
+     //   Holder<capture of ? extends T>
+     //   cannot be applied to (T)
+     T t = holder.get();
+     return t;
+   } 
+   // 展示超类型通配
+   static <T> void wildSupertype(Holder<? super T> holder, T arg) {
+     // holder可以是持有任何T的基类型的容器，因此，set()可以接受T，因为任何可以工作于基类的对象都可以多态地作用于导出类（这里就是T）
+     holder.set(arg);
+     // T t = holder.get();  // Error:  由holder持有的类型可以是任何超类型，因此唯一安全的类型就是Object
+     //   Incompatible types: found Object, required T
+
+     // OK, but type information has been lost:
+     Object obj = holder.get();
+   }
+   public static void main(String[] args) {
+     Holder raw = new Holder<Long>();
+     // Or:
+     raw = new Holder();
+     Holder<Long> qualified = new Holder<Long>();
+     Holder<?> unbounded = new Holder<Long>();
+     Holder<? extends Long> bounded = new Holder<Long>();
+     Long lng = 1L;
+
+     rawArgs(raw, lng);
+     rawArgs(qualified, lng);
+     rawArgs(unbounded, lng);
+     rawArgs(bounded, lng);
+     
+     unboundedArg(raw, lng);
+     unboundedArg(qualified, lng);
+     unboundedArg(unbounded, lng);
+     unboundedArg(bounded, lng);
+
+     // Object r1 = exact1(raw); // Warnings:
+     //   Unchecked conversion from Holder to Holder<T>
+     //   Unchecked method invocation: exact1(Holder<T>)
+     //   is applied to (Holder)
+     Long r2 = exact1(qualified);
+     Object r3 = exact1(unbounded); // Must return Object
+     Long r4 = exact1(bounded);
+     
+     // Long r5 = exact2(raw, lng); // Warnings:
+     //   Unchecked conversion from Holder to Holder<Long>
+     //   Unchecked method invocation: exact2(Holder<T>,T)
+     //   is applied to (Holder,Long)
+     Long r6 = exact2(qualified, lng);
+     // Long r7 = exact2(unbounded, lng); // Error:
+     //   exact2(Holder<T>,T) cannot be applied to
+     //   (Holder<capture of ?>,Long)
+     // Long r8 = exact2(bounded, lng); // Error:
+     //   exact2(Holder<T>,T) cannot be applied
+     //   to (Holder<capture of ? extends Long>,Long)
+     
+     // Long r9 = wildSubtype(raw, lng); // Warnings:
+     //   Unchecked conversion from Holder
+     //   to Holder<? extends Long>
+     //   Unchecked method invocation:
+     //   wildSubtype(Holder<? extends T>,T) is
+     //   applied to (Holder,Long)
+     Long r10 = wildSubtype(qualified, lng);
+     // OK, but can only return Object:
+     Object r11 = wildSubtype(unbounded, lng);
+     Long r12 = wildSubtype(bounded, lng);
+     
+     // wildSupertype(raw, lng); // Warnings:
+     //   Unchecked conversion from Holder
+     //   to Holder<? super Long>
+     //   Unchecked method invocation:
+     //   wildSupertype(Holder<? super T>,T)
+     //   is applied to (Holder,Long)
+     wildSupertype(qualified, lng);
+     // wildSupertype(unbounded, lng); // Error:
+     //   wildSupertype(Holder<? super T>,T) cannot be
+     //   applied to (Holder<capture of ?>,Long)
+     // wildSupertype(bounded, lng); // Error:
+     //   wildSupertype(Holder<? super T>,T) cannot be
+     //  applied to (Holder<capture of ? extends Long>,Long)
+   }
+}
+::<<
+
+exact2()具有最多的限制，因为它希望精确地得到一个Holder<T>，以及一个具有类型T的参数，正是由此，它将产生错误或警告，除非提供确切的参数。又是这样很好，但是如果它过于受限，那么就可以使用通配符，这取决于是否想要从泛型参数中返回类型确定的返回值（wildSubtype()）或者是想要向泛型参数传递类型确定的参数(wildSupertype())
+
+使用确切类型来替代通配符的好处是可以用泛型参数来做更多的事，但是使用通配符使得你必须接受范围更宽的参数化类型作为参数。因此，必须逐个情况地权衡利弊，找到更适合你的需求的方法。
+
+
+
+10.4、捕获转换
+-----------
+
+下面演示一下捕获转换
+>>::
+class CaptureConversion {
+    // f1()的类型参数都是确切的，没有通配符或者边界
+    static <T> void f1(Holder<T> holder) {
+        T t = holder.get();
+        System.out.println(t.getClass().getSimpleName());
+    }
+    // 是一个无界通配符，看起来是未知的，但是f2里面调用的f1的参数类型是要已知的，
+    // 这里发生的是：参数类型在调用f2()的过程中被捕获，因此它可以再对f1的调用中被使用
+    static void f2(Holder<?> holder) {
+        f1(holder); // Call with captured type
+    } 
+    @SuppressWarnings("unchecked")
+    public static void main(String[] args) {
+        Holder raw = new Holder<Integer>(1);
+        // f1(raw); // Produces warnings
+        f2(raw); // No warnings
+        Holder rawBasic = new Holder();
+        rawBasic.set(new Object()); // Warning
+        f2(rawBasic); // No warnings
+        // Upcast to Holder<?>, still figures it out:
+        Holder<?> wildcarded = new Holder<Double>(1.0);
+        f2(wildcarded);
+    }
+} /* Output:
+  Integer
+  Object
+  Double
+  *///:~
+::<<
+
+捕获转换非常有趣，但是非常受限：捕获转换在这个情况下才会工作，即在方法内部，需要使用确切的类型的时候，注意，不能从f2()中返回T，因为T对于f2()来说是未知的。
+
+
+11 问题
+=========
+ 
+11.1、任何基本类型都不能作为类型参数
+---------------------------
+
+可以使用基本类型的包装类，使用容器的时候，自动包装机制会把基本类型转换为包装类，但是记住：自动包装无法用于数组，所以泛型数组不能传入基本类型的数组。
+
+>>::
+public class Chapter15_11_1 {
+	
+	// 使用 t 填充数组
+	public static <T> T[] fill(T[] a, T t){
+		for(int i=0; i<a.length; i++){
+			a[i] = t;
+		}
+		return a;
+	}
+
+	public static void main(String[] args){
+		fill(new Integer[10], 3);
+		// fill(new int[10], 3);  //编译失败，因为自动包装机制不能应用于数组，因此这无法工作。
+	}
+}
+::<<
+
+
+11.2、实现参数化接口
+------------------
+一个类不能实现同一个泛型接口的两种变体，由于擦除的原因，这两个变体会成为相同的接口。
+>>::
+interface Payable<T>{}
+
+class Employee implements Payable<Employee>{}
+
+/**
+ * 下面不能编译通过，因为擦除将会将 Payable<Employee> 和 Payable<Hourly> 简化为相同的类Payable。
+ * 去掉泛型，却可以通过编译。
+ *
+ */
+class Hourly extends Employee implements Payable<Hourly>{}
+::<<
+
+
+11.3、转型和警告
+------------
+
+使用带有泛型类型参数的转型或indtanceof不会有任何效果
+>>::
+class FixedSizeStack<T> {
+	private int index = 0;
+	private Object[] storage;
+	public FixedSizeStack(int size) {
+		storage = new Object[size];
+	}
+    public void push(T item) { storage[index++] = item; }
+	@SuppressWarnings("unchecked")
+	public T pop() {
+	    // 转型 unchecked cast警告，由于擦除的原因，编译器无法知道这个转型是否安全
+	    // 实际上只是将Object转型为Object
+	    return (T)storage[--index]; 
+	}
+}	
+
+public class Chapter15_11_3 {
+	public static final int SIZE = 10;
+	public static void main(String[] args) {
+		FixedSizeStack<String> strings =
+		      new FixedSizeStack<String>(SIZE);
+		for(String s : "A B C D E F G H I J".split(" "))
+			strings.push(s);
+		for(int i = 0; i < SIZE; i++) {
+			String s = strings.pop();
+		    System.out.print(s + " ");
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void f(String filepath) throws Exception{
+	    // 下面演示由readObject()方法读取转型
+        ObjectInputStream in = new ObjectInputStream(new FileInputStream(filepath));
+        // 如果没有压制的注解，则会阐释警告 Unchecked cast from Object to List<Circle>
+        // List<Circle> circles = (List<Circle>)in.readObject();
+        
+        // 如果想继续使用泛型的情况下不产生警告，则可以使用Java EE5中的使用泛型类来转型
+        List<Circle> circles = List.class.cast(in.readObject());
+        
+        // 但是你继续添加如下转型是仍会得到一个警告
+        // Type safety: Unchecked cast from List to List<Circle>
+        circles = (List<Circle>)List.class.cast(in.readObject());
+        
+	}
+}
+::<<
+
+
+
+11.4、重载
+---------
+
+由于擦除的原因，重载方法将产生相同的类型签名
+>>::
+class UseList<W,T> {
+    // 错误：Method f(List<T>) has the same erasure f(List<E>) as another method in type UseList<W,T>
+    void f(List<T> v) {}
+    void f(List<W> v) {}
+}
+::<<
+
+11.5、基类劫持了接口
+---------------
+>>::
+class ComparablePet implements Comparable<ComparablePet> {
+    public int compareTo(ComparablePet arg) { return 0; }
+}
+// 报错：The interface Comparable cannot be implemented more than once with different arguments: 
+// Comparable<ComparablePet> and Comparable<TomCat>
+// 基类ComparablePet劫持了Comparable接口，只能进行ComparablePet的比较，而不能进行TomCat的比较
+class TomCat extends ComparablePet implements Comparable<TomCat>{
+    // Error: Comparable cannot be inherited with
+    // different arguments: <Cat> and <Pet>
+    public int compareTo(TomCat arg) { return 0; }
+}
+
+/**
+ * 下面演示实现ComparablePet中的相同接口的可行性：
+ * 这只是与覆盖基类中的方法相同
+ */
+class Hamster extends ComparablePet implements Comparable<ComparablePet> {
+    public int compareTo(ComparablePet arg) { return 0; }
+}
+// Or just:
+class Gecko extends ComparablePet {
+    public int compareTo(ComparablePet arg) { return 0; }
+}
+::<<
+
+
+
+12 自限定的类型
+===========
+
+12.1、古怪的循环泛型
+---------------
+下面演示一个循环泛型的例子
+
+>>::
+class GenericType<T>{}
+// 解释:创建一个新类，继承自一个泛型类型，这个泛型类型接受新类的名字作为其参数。
+class CuriouslyRecurringGeneric extends GenericType<CuriouslyRecurringGeneric> {}
+::<<
+
+
+下面演示一下循环泛型的作用
+
+首先创建一个泛型类
+>>::
+class BasicHolder<T> {
+    T element;
+    void set(T arg) { element = arg; }
+    T get() { return element; }
+    void f() {
+        System.out.println(element.getClass().getSimpleName());
+    }
+}
+::<<
+
+实现循环泛型类，作用：基类BasicHolder用导出类Subtype替代其方法间传递的参数。
+>>::
+class Subtype extends BasicHolder<Subtype> {}
+::<<
+
+使用
+>>::
+public class Chapter15_12_1 {
+    public static void main(String[] args) {
+        Subtype st1 = new Subtype(), st2 = new Subtype();
+        // 传递给set()的参数和从get()返回的类型都是确切的Subtype
+        st1.set(st2);
+        Subtype st3 = st1.get();
+        st1.f();
+    }
+}
+::<<
+
+
+
+
+12.2、自限定
+----------
+
+首先看一个没有自限定的例子，BasicHolder可以使用任何类型作为其泛型参数：
+>>::
+class Other {}
+
+class BasicOther extends BasicHolder<Other> {}
+
+class Unconstrained {
+  public static void main(String[] args) {
+    BasicOther b = new BasicOther(), b2 = new BasicOther();
+    b.set(new Other());
+    Other other = b.get();
+    b.f();
+  }
+}
+::<<
+
+我们使用自限定类型其实就是为了要求在继承关系中，像下面这样使用这个类
+>>b:
+class A extends SelfBounded<A>{}
+:b<<
+
+这会强制要求将正在定义的子类当做参数传递给基类
+
+下面看一个自限定类型的例子
+>>::
+class SelfBounded<T extends SelfBounded<T>> {
+    T element;
+    SelfBounded<T> set(T arg) {
+        element = arg;
+        return this;
+    }
+    T get() { return element; }
+}
+
+class A extends SelfBounded<A> {}
+class B extends SelfBounded<A> {} // Also OK
+
+class C extends SelfBounded<C> {
+    C setAndGet(C arg) { set(arg); return get(); }
+}   
+
+class D {}
+// Can't do this:
+// class E extends SelfBounded<D> {}
+// Compile error: Type parameter D is not within its bound
+
+// Alas, you can do this, so you can't force the idiom:
+class F extends SelfBounded {}
+
+public class Chapter15_12_2 {
+    public static void main(String[] args) {
+        A a = new A();
+        
+        // 直接使用SelfBounded，传入类似A这样的子类
+        SelfBounded<A> bounded = new SelfBounded<A>();
+        
+        a.set(new A());
+        a = a.set(new A()).get();
+        a = a.get();
+        C c = new C();
+        c = c.setAndGet(new C());
+    }
+}
+::<<
+
+还可以将自限定用于泛型方法
+>>::
+class SelfBoundingMethods {
+    static <T extends SelfBounded<T>> T f(T arg) {
+        return arg.set(arg).get();
+    }
+    public static void main(String[] args) {
+        A a = f(new A());
+    }
+}
+::<<
+
+
+12.3、参数协变
+-----------
+
+前一节演示的自限定类型的价值在于可以产生协变参数类型：方法参数类型会随子类而变化。
+
+而自限定类型还可以产生于子类类型相同的返回值，如前一节的B类，但这并不是重要的，因为协变返回类型是在JavaSE5中引入的，之前的JDK版本并不能编译自限定
+
+>>::
+class Base {}
+class Derived extends Base {}
+
+interface OrdinaryGetter {
+  Base get();
+}
+::<<
+
+子接口继承OrdinaryGetter，其中的get()方法返回值为到处的雷系Derived，这在早先的Java版本是不合法的
+>>::
+interface DerivedGetter extends OrdinaryGetter {
+  // Return type of overridden method is allowed to vary:
+  Derived get();
+}
+
+class CovariantReturnTypes {
+  void test(DerivedGetter d) {
+    Derived d2 = d.get();
+  }
+}
+::<<
+
+
+下面演示一下自限定类型中导出类的方法接受导出类型而不是及类型为参数的
+
+首先看一下非泛型代码中，参数不能随子类型发生变化的例子
+>>::
+class OrdinarySetter {
+    void set(Base base) {
+      System.out.println("OrdinarySetter.set(Base)");
+    }
+}
+
+class DerivedSetter extends OrdinarySetter {
+    void set(Derived derived) {
+      System.out.println("DerivedSetter.set(Derived)");
+    }
+}   
+
+class OrdinaryArguments {
+    public static void main(String[] args) {
+      Base base = new Base();
+      Derived derived = new Derived();
+      DerivedSetter ds = new DerivedSetter();
+      ds.set(derived);
+      ds.set(base); // 这里ds实际上有两个方法，在继承的时候，set方法被重载了，而不是覆盖了。
+    }
+}
+::<<
+
+而在自限定中，是这样的：编译器不能识别将基类型当做参数传递给set()的尝试，因为没有任何方法具有这样的签名。
+
+实际上，这个参数已经被覆盖了：
+>>::
+interface SelfBoundSetter<T extends SelfBoundSetter<T>> {
+    void set(T arg);
+}
+
+interface Setter extends SelfBoundSetter<Setter> {}
+
+class SelfBoundingAndCovariantArguments {
+    void testA(Setter s1, Setter s2, SelfBoundSetter sbs) {
+        s1.set(s2);
+        // s1.set(sbs); // 错误，不存在这样的方法，这个方法已被Setter子类覆盖
+        // set(Setter) in SelfBoundSetter<Setter>
+        // cannot be applied to (SelfBoundSetter)
+    }
+}
+::<<
+
+而没有使用自限定类型的情况下，普通的基础机制就会介入，这个时候方法就会被重载，就像在非泛型的情况下一样：
+>>::
+class GenericSetter<T> { // 非自限定类型
+    void set(T arg){
+      System.out.println("GenericSetter.set(Base)");
+    }
+}
+
+class DerivedGS extends GenericSetter<Base> {
+    void set(Derived derived){
+        System.out.println("DerivedGS.set(Derived)");
+    }
+}   
+
+public class Chapter15_12_3 {
+    public static void main(String[] args) {
+        Base base = new Base();
+        Derived derived = new Derived();
+        DerivedGS dgs = new DerivedGS();
+        dgs.set(derived);
+        dgs.set(base); // 编译通过，DerivedGS中的set()方法被重载，非覆盖
+    }
+}
+::<<
+
+
+13、动态类型安全
+===========
+
+ 没有使用泛型之前的代码，是不能限定放入容器的元素类型的，所以旧式的代码有可能会破坏你的容器。
+
+JavaSE5中有一组静态方法可以检查类型问题：checkedCollection(), checkedList(), checkedMap(), checkedSet(), checkedSortedMap(), checkedSortedSet()
+
+下面演示一下这种情况：
+
+>>::
+interface Pet{}
+class Dog implements Pet{}
+class Cat implements Pet{}
+public class Chapter15_13 {
+    
+    // 假设oldStyleMethod()是遗留的代码
+    @SuppressWarnings("unchecked")
+    static void oldStyleMethod(List probablyDogs) {
+        probablyDogs.add(new Cat());
+    } 
+    
+    public static void main(String[] args) {
+        // 没有检验之前插入是没有问题的
+        List<Dog> dogs1 = new ArrayList<Dog>();
+        oldStyleMethod(dogs1); // Quietly accepts a Cat
+        // 检验之后抛出 ClassCastException
+        List<Dog> dogs2 = Collections.checkedList(
+                new ArrayList<Dog>(), Dog.class);
+        try {
+            oldStyleMethod(dogs2); // Throws an exception
+        } catch(Exception e) {
+            System.out.println(e);
+        }
+        // Derived types work fine:
+        List<Pet> pets = Collections.checkedList(
+                new ArrayList<Pet>(), Pet.class);
+        pets.add(new Dog());
+        pets.add(new Cat());
+    }
+}
+::<<
+
+
+
+14、异常
+=========
+
+泛型使用于异常是非常受限的，catch语句不能捕获泛型类型的异常，因为在编译器和运行时都必须知道异常的确切类型，泛型类也不能直接或间接的继承自Throwable（这将进一步阻止你去定义不能捕获的泛型异常），但是，类型参数可能会在一个方法的throws子句中用到，这使得你可以编写随检查型异常的类而发生变化的泛型代码：
+
+>>::
+interface Processor<T,E extends Exception> {
+    void process(List<T> resultCollector) throws E; // 抛出泛型异常
+}
+::<<
+
+ProcessRunner 是一个可变数组，保存Processor
+>>::
+class ProcessRunner<T,E extends Exception> extends ArrayList<Processor<T,E>> {
+    // processAll()方法依次执行所有的Processor，resultCollector是收集参数，存储process的结果
+    List<T> processAll() throws E {  // 抛出泛型异常
+        List<T> resultCollector = new ArrayList<T>();
+        for(Processor<T,E> processor : this)
+            processor.process(resultCollector);
+            return resultCollector;
+    }
+}   
+
+class Failure1 extends Exception {}
+
+class Processor1 implements Processor<String,Failure1> {
+    static int count = 3;
+    public void
+    process(List<String> resultCollector) throws Failure1 {
+        if(count-- > 1)
+            resultCollector.add("Hep!");
+        else
+            resultCollector.add("Ho!");
+        if(count < 0)
+            throw new Failure1();
+        }
+    }   
+
+class Failure2 extends Exception {}
+
+class Processor2 implements Processor<Integer,Failure2> {
+    static int count = 2;
+    public void
+    process(List<Integer> resultCollector) throws Failure2 {
+        if(count-- == 0)
+            resultCollector.add(47);
+        else {
+            resultCollector.add(11);
+        }
+        if(count < 0)
+            throw new Failure2();
+    }
+}   
+  
+public class Chapter15_14 {
+    
+    public static void main(String[] args) {
+        ProcessRunner<String,Failure1> runner =
+                new ProcessRunner<String,Failure1>();
+        for(int i = 0; i < 3; i++)
+            runner.add(new Processor1());
+        try {
+            System.out.println(runner.processAll());  // [Hep!, Hep!, Ho!]
+        } catch(Failure1 e) {
+            System.out.println(e);
+        }
+
+        ProcessRunner<Integer,Failure2> runner2 =
+                new ProcessRunner<Integer,Failure2>();
+        for(int i = 0; i < 3; i++)
+            runner2.add(new Processor2());
+        try {
+         // 由于Processor2中的count为2，所以执行第三个Processor2的时候抛出异常了
+            System.out.println(runner2.processAll());
+        } catch(Failure2 e) {
+            System.out.println(e);
+        }
+    }
+}
+::<<
+
+
+
+15 混型
+==================
+
+混型最基本的概念：混合多个类的能力，混型的价值之一是可以将特性和行为一致地应用于多个类之上。
+
+混型有点面向切面编程的味道。
+
+15.1、C++中的混型
+--------------
+
+>>::
+/******************************************
+ *  C++代码
+ ******************************************/
+//: generics/Mixins.cpp
+#include <string>
+#include <ctime>
+#include <iostream>
+using namespace std;
+
+template<class T> class TimeStamped : public T {
+long timeStamp;
+public:
+TimeStamped() { timeStamp = time(0); }
+long getStamp() { return timeStamp; }
+};
+
+template<class T> class SerialNumbered : public T {
+long serialNumber;
+static long counter;
+public:
+SerialNumbered() { serialNumber = counter++; }
+long getSerialNumber() { return serialNumber; }
+};
+
+//Define and initialize the static storage:
+template<class T> long SerialNumbered<T>::counter = 1;
+
+class Basic {
+string value;
+public:
+void set(string val) { value = val; }
+string get() { return value; }
+};  
+
+int main() {
+TimeStamped<SerialNumbered<Basic> > mixin1, mixin2;
+mixin1.set("test string 1");
+mixin2.set("test string 2");
+cout << mixin1.get() << " " << mixin1.getStamp() <<
+  " " << mixin1.getSerialNumber() << endl;
+cout << mixin2.get() << " " << mixin2.getStamp() <<
+  " " << mixin2.getSerialNumber() << endl;
+} /* Output: (Sample)
+test string 1 1129840250 1
+test string 2 1129840250 2
+*///:~
+::<<
+
+
+
+15.2、与接口混合
+------------
+
+使用接口来产生混型的例子，Mixin类基本上是在使用代理，因此，每个混入类型都要求在Mixin中有一个相应的域，而你必须在Mixin中编写所有必须的方法，将方法调用转发给恰当的对象。
+>>::
+interface TimeStamped { long getStamp(); }
+
+class TimeStampedImp implements TimeStamped {
+    private final long timeStamp;
+    public TimeStampedImp() {
+        timeStamp = new Date().getTime();
+    }
+    public long getStamp() { return timeStamp; }
+}
+
+interface SerialNumbered { long getSerialNumber(); }
+
+class SerialNumberedImp implements SerialNumbered {
+    private static long counter = 1;
+    private final long serialNumber = counter++;
+    public long getSerialNumber() { return serialNumber; }
+}
+
+interface Basic {
+    public void set(String val);
+    public String get();
+}
+
+class BasicImp implements Basic {
+    private String value;
+    public void set(String val) { value = val; }
+    public String get() { return value; }
+}
+::<<
+
+Mixin类基本上是在使用代理，因此，每个混入类型都要求在Mixin中有一个相应的域。
+
+>>::
+class Mixin extends BasicImp
+implements TimeStamped, SerialNumbered {
+    // 混入类型对应的域
+    private TimeStamped timeStamp = new TimeStampedImp();
+    // 混入类型对应的域
+    private SerialNumbered serialNumber =
+            new SerialNumberedImp();
+    // 在Mixin中编写所有必须的方法，将方法调用转发给恰当的对象:
+    public long getStamp() { return timeStamp.getStamp(); }
+    public long getSerialNumber() {
+        return serialNumber.getSerialNumber();
+    }
+}
+
+public class Chapter15_15_2 {
+    
+    public static void main(String[] args) {
+        Mixin mixin1 = new Mixin(), mixin2 = new Mixin();
+        mixin1.set("test string 1");
+        mixin2.set("test string 2");
+        System.out.println(mixin1.get() + " " +
+          mixin1.getStamp() +  " " + mixin1.getSerialNumber());
+        System.out.println(mixin2.get() + " " +
+          mixin2.getStamp() +  " " + mixin2.getSerialNumber());
+    }
+}
+::<<
+
+缺点：当使用更复杂的混型时，代码数量会急速增加
+
+
+
+15.3、使用装饰器模式
+---------------
+
+当你观察混型的使用方式时，就会发现混型概念好像与装饰器设计模式关系很近。
+
+装饰器模糊使用分层对象来动态透明地向单个对象中添加责任。装饰器指定包装在最初的对象周围的所有对象都具有相同的基本接口。
+
+某些事物是可装饰的，可以通过将其他类包装在这个可装饰对象的四周，来将功能分层。
+
+装饰器是通过使用组合和形式化结构来实现的，而混型是基于继承的。
+
+因此可以将基于参数化类型的混型当做是一种泛型装饰器机制，这种机制不需要装饰器设计模式的继承结构。
+
+上一节的例子可以改写为使用装饰器：
+>>::
+class Basic {
+    private String value;
+    public void set(String val) { value = val; }
+    public String get() { return value; }
+}
+
+class Decorator extends Basic {
+    protected Basic basic;
+    public Decorator(Basic basic) { this.basic = basic; }
+    public void set(String val) { basic.set(val); }
+    public String get() { return basic.get(); }
+}   
+
+class TimeStamped extends Decorator {
+    private final long timeStamp;
+    public TimeStamped(Basic basic) {
+        super(basic);
+        timeStamp = new Date().getTime();
+    }
+    public long getStamp() { return timeStamp; }
+}
+
+class SerialNumbered extends Decorator {
+    private static long counter = 1;
+    private final long serialNumber = counter++;
+    public SerialNumbered(Basic basic) { super(basic); }
+    public long getSerialNumber() { return serialNumber; }
+}   
+
+class Decoration {
+    public static void main(String[] args) {
+        TimeStamped t = new TimeStamped(new Basic());
+        TimeStamped t2 = new TimeStamped(
+                new SerialNumbered(new Basic()));
+        //! t2.getSerialNumber(); // Not available
+        SerialNumbered s = new SerialNumbered(new Basic());
+        SerialNumbered s2 = new SerialNumbered(
+                new TimeStamped(new Basic()));
+        //! s2.getStamp(); // Not available
+    }
+}
+::<<
+
+
+
+缺点：从main方法注释掉的两行代码可以发现，使用装饰器所产生的对象类型是最后被装饰的类型，尽管可以添加多个层，但是最后一层才是实际的类型，因此只有最后一层方法是可视的。因此，对于装饰器来说，其明显的缺陷是它只能有效地工作于装饰中的最后一层，而混型方法显然会更自然一些。因此，装饰器只是对由混型提出的问题的一种局限的解决方案。
+
+
+
+
+
+15.4、与动态代理混合
+---------------
+
+可以使用动态代理来创建一种比装饰器更贴近混型模型的机制，通过使用动态代理，所产生的类的动态类型将会是已经混入的组合类型。
+
+由于动态代理的限制，每个被混入的类都必须是某个接口的实现
+>>::
+class MixinProxy implements InvocationHandler {
+    Map<String,Object> delegatesByMethod;
+    public MixinProxy(TwoTuple<Object,Class<?>>... pairs) {
+        delegatesByMethod = new HashMap<String,Object>();
+        for(TwoTuple<Object,Class<?>> pair : pairs) {
+            for(Method method : pair.second.getMethods()) {
+                String methodName = method.getName();
+                // The first interface in the map
+                // implements the method.
+                if (!delegatesByMethod.containsKey(methodName))
+                    delegatesByMethod.put(methodName, pair.first);
+            }
+        }
+    } 
+    public Object invoke(Object proxy, Method method,
+            Object[] args) throws Throwable {
+        String methodName = method.getName();
+        Object delegate = delegatesByMethod.get(methodName);
+        return method.invoke(delegate, args);
+    }
+    @SuppressWarnings("unchecked")
+    public static Object newInstance(TwoTuple... pairs) {
+        Class[] interfaces = new Class[pairs.length];
+        for(int i = 0; i < pairs.length; i++) {
+            interfaces[i] = (Class)pairs[i].second;
+        }
+        ClassLoader cl =
+                pairs[0].first.getClass().getClassLoader();
+        return Proxy.newProxyInstance(
+                cl, interfaces, new MixinProxy(pairs));
+    }
+}   
+
+public class Chapter15_15_4 {
+    
+    public static void main(String[] args) {
+        Object mixin = MixinProxy.newInstance(
+                tuple(new BasicImp(), Basic.class),
+                tuple(new TimeStampedImp(), TimeStamped.class),
+                tuple(new SerialNumberedImp(),SerialNumbered.class));
+        Basic b = (Basic)mixin;
+        TimeStamped t = (TimeStamped)mixin;
+        SerialNumbered s = (SerialNumbered)mixin;
+        b.set("Hello");
+        System.out.println(b.get());
+        System.out.println(t.getStamp());
+        System.out.println(s.getSerialNumber());
+    }
+}
+/* Output: (Sample)
+Hello
+1132519137015
+1
+*///:~
+
+::<<
+
+缺点：因为只有动态类型而不是非静态类型才包含所有的混入类型，因此这仍不如C++的方式好，因为可以再具有这些类型的对象上调用方法之前，你被强制要求必须先将这些对象向下转型为恰当的类型。
+
+ 但是，这明显更接近于真正的混型。
+
+
+
+
+
+
+16、潜在类型机制
+============
+
+Java泛型中，当要在泛型类型上执行操作时，就会产生问题，因为擦除要求指定可能会用到的泛型类型的边界，以安全地调用代码中的泛型对象上的具体方法。这是对“泛化”概念的一种明显的限制，因为必须限制你的泛型类型，使他们继承自特定的类，或者特定的接口。在某些情况下，你最终可能会使用普通类或者普通接口，因为限定边界的泛型和可能会和指定类或接口没有任何区别。
+
+某些编程语言提供的一种解决方法称为潜在雷系机制或结构化类型机制（鸭子类型机制：如果它走起来像鸭子，并且叫起来也像鸭子，那么你就可以将它当做鸭子对待。）
+
+潜在类型机制使得你可以横跨类继承结构，调用不属于某个公共接口的方法。因此，实际上一段代码可以声明：“我不关心你是什么类型，只要你可以speak()和sit()即可。”由于不要求具体类型，因此代码就可以更加泛化了。
+
+两种支持潜在类型机制的语言：Python和C++。
+
+下面一段Python代码演示下潜在类型机制的支持：
+>>::
+class Dog:
+    def speak(self):
+        print "Arf!"
+    def sit(self):
+        print "Sitting"
+    def repoduce(self)
+        pass
+
+class Robot:
+    def speak(self):
+        print "Click!"
+    def sit(self):
+        print "Clank!"
+    def repoduce(self)
+        pass
+        
+def perform(anything):
+    anything.spead()
+    anything.sit()
+*/
+::<<
+
+perform的anything参数只是一个标示符，它必须能够执行perform()期望它执行的操作，因此这里隐含着一个接口，但是从来都不必显示地写出这个接口——它是潜在的。perform不关心其参数的类型，因此我们可以向它传递任何对象，只要该对象支持speak()和sit()方法，否则，得到运行时异常。
+
+Java的泛型是后来才添加的，因此没有任何机会可以去实现任何类型的潜在类型机制。
+
+如果试图用Java实现上面的示例，就会被强制要求使用一个类或者接口，并在边界表达式中指定它：
+>>::
+interface Performs {
+    void speak();
+    void sit();
+}
+
+class PerformingDog extends Dog implements Performs {
+    public void speak() { System.out.println("Woof!"); }
+    public void sit() { System.out.println("Sitting"); }
+    public void reproduce() {}
+}
+
+class Robot implements Performs {
+    public void speak() { System.out.println("Click!"); }
+    public void sit() { System.out.println("Clank!"); }
+    public void oilChange() {}
+}   
+
+class Communicate {
+    public static <T extends Performs>
+    void perform(T performer) {
+        performer.speak();
+        performer.sit();
+    }
+}
+
+public class Chapter15_16 {
+    
+    public static void main(String[] args) {
+        PerformingDog d = new PerformingDog();
+        Robot r = new Robot();
+        Communicate.perform(d);
+        Communicate.perform(r);
+    }
+}
+/* Output:
+Woof!
+Sitting
+Click!
+Clank!
+*/
+::<<
+
+注意：perform()不需要使用泛型来工作，它可以被简单的指定为接受一个Performs对象：
+
+>>::
+class Communicate {
+    public static void perform(Performs performer) {
+        performer.speak();
+        performer.sit();
+    }
+}
+::<<
+
+
+17、对缺乏潜在类型机制的补偿
+===================
+
+17.1、反射
+-----------
+
+
+对于潜在类型机制的一种补偿，可以使用的一种方式是反射，下面的perform()方法就是用了潜在类型机制：
+>>::
+class Mime {
+    public void walkAgainstTheWind() {}
+    public void sit() { System.out.println("Pretending to sit"); }
+    public void pushInvisibleWalls() {}
+    public String toString() { return "Mime"; }
+}
+
+class SmartDog {
+    public void speak() { System.out.println("Woof!"); }
+    public void sit() { System.out.println("Sitting"); }
+    public void reproduce() {}
+}
+
+class CommunicateReflectively {
+    public static void perform(Object speaker) {
+        Class<?> spkr = speaker.getClass();
+        try {
+            try {
+                Method speak = spkr.getMethod("speak");
+                speak.invoke(speaker);
+            } catch(NoSuchMethodException e) {
+                System.out.println(speaker + " cannot speak");
+            }
+            try {
+                Method sit = spkr.getMethod("sit");
+                sit.invoke(speaker);
+            } catch(NoSuchMethodException e) {
+                System.out.println(speaker + " cannot sit");
+            }
+        } catch(Exception e) {
+            throw new RuntimeException(speaker.toString(), e);
+        }
+    }
+}
+
+public class Chapter15_17_1 {
+    
+    public static void main(String[] args) {
+        CommunicateReflectively.perform(new SmartDog());
+        CommunicateReflectively.perform(new Robot());
+        CommunicateReflectively.perform(new Mime());
+    }
+}
+
+/* Output:
+Woof!
+Sitting
+Click!
+Clank!
+Mime cannot speak
+Pretending to sit
+*///:~
+::<<
+
+
+
+
+17.2、将一个方法应用于序列
+-------------------
+
+上一节通过反射类型实现的潜在类型机制把所有类型检查都转移到了运行时，因此许多情况下并不是我们所希望的。
+
+下面创建一个apply()方法，它能够将任何方法f应用于某个序列seq中的所有对象，通过反射和可变参数args传递方法的参数来实现。
+>>::
+class Apply {
+    // 必须放置边界和通配符，银边使得Apply和FilledList在所有需要的情况下都可以使用，否则，下面的某些Apply和FilledList应用将无法工作。
+    public static <T, S extends Iterable<? extends T>>
+        void apply(S seq, Method f, Object... args) {
+        try {
+            for(T t: seq)
+                f.invoke(t, args);
+        } catch(Exception e) {
+            // Failures are programmer errors
+            throw new RuntimeException(e);
+        }
+    }
+}   
+
+class Shape {
+    public void rotate() { System.out.println(this + " rotate"); }
+    public void resize(int newSize) {
+        System.out.println(this + " resize " + newSize);
+    }
+}
+
+class Square extends Shape {}
+
+class FilledList<T> extends ArrayList<T> {
+    // 类型标记技术是Java文献推荐的技术。但是，有些人强烈地首先工厂方式
+    public FilledList(Class<? extends T> type, int size) {
+        try {
+            for(int i = 0; i < size; i++)
+                // Assumes default constructor:
+                add(type.newInstance());
+        } catch(Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+}   
+
+public class Chapter15_17_2 {
+    public static void main(String[] args) throws Exception {
+        List<Shape> shapes = new ArrayList<Shape>();
+        for(int i = 0; i < 10; i++)
+            shapes.add(new Shape());
+        Apply.apply(shapes, Shape.class.getMethod("rotate"));
+        Apply.apply(shapes,
+                Shape.class.getMethod("resize", int.class), 5);
+        List<Square> squares = new ArrayList<Square>();
+        for(int i = 0; i < 10; i++)
+            squares.add(new Square());
+        Apply.apply(squares, Shape.class.getMethod("rotate"));
+        Apply.apply(squares,
+                Shape.class.getMethod("resize", int.class), 5);
+      
+        Apply.apply(new FilledList<Shape>(Shape.class, 10),
+        Shape.class.getMethod("rotate"));
+        Apply.apply(new FilledList<Shape>(Square.class, 10),
+        Shape.class.getMethod("rotate"));
+
+        SimpleQueue<Shape> shapeQ = new SimpleQueue<Shape>();
+        for(int i = 0; i < 5; i++) {
+            shapeQ.add(new Shape());
+            shapeQ.add(new Square());
+        }
+        Apply.apply(shapeQ, Shape.class.getMethod("rotate"));
+    }
+}
+::<<
+
+
+
+17.3、当你并未碰巧拥有正确的接口时
+--------------------------
+
+上一节示例的Iterable接口是内建的，如果刚好不存在适合你的接口的时候呢？
+
+下面的例子中，没有预见到对“Addable”接口的需要，所以我们被限制在Collection继承层次结构之内，即便SimpleQueue有一个add()方法，它也不能工作。因为这会将代码限制为只能工作于Collection，因此这样的代码不是特别的繁华。有了潜在类型机制，情况就会不同了。
+
+>>::
+class Fill {
+    // 被限制在Collection继承层次结构之内
+    public static <T> void fill(Collection<T> collection,
+            Class<? extends T> classToken, int size) {
+        for(int i = 0; i < size; i++)
+            // Assumes default constructor:
+            try {
+                collection.add(classToken.newInstance());
+            } catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+    }
+}
+
+class Contract {
+    private static long counter = 0;
+    private final long id = counter++;
+    public String toString() {
+        return getClass().getName() + " " + id;
+    }
+}
+
+class TitleTransfer extends Contract {}
+
+public class Chapter15_17_3 {
+    public static void main(String[] args) throws Exception {
+        List<Contract> contracts = new ArrayList<Contract>();
+        Fill.fill(contracts, Contract.class, 3);
+        Fill.fill(contracts, TitleTransfer.class, 2);
+        for(Contract c: contracts)
+            System.out.println(c);
+        SimpleQueue<Contract> contractQueue =
+                new SimpleQueue<Contract>();
+        // Won't work. fill() is not generic enough:
+        // Fill.fill(contractQueue, Contract.class, 3);
+    }
+}
+
+/* Output:
+Contract 0
+Contract 1
+Contract 2
+TitleTransfer 3
+TitleTransfer 4
+*///:~
+::<<
+
+
+
+
+17.4、用适配器仿真潜在类型机制
+----------------------
+
+实际上，潜在类型机制创建了一个包含所需方法的隐式接口。因此它遵循这样的规则：如果我们手工编写了必须的接口，那么它就应该能够解决问题。
+
+从我们拥有的接口中编写代码来产生我们需要的接口，这是适配器设计模式的一个典型示例。我们可以使用适配器来适配已有的接口，以产生想要的接口。
+
+首先创建一个Addable接口，具体的实现由适配器提供。
+
+>>::
+interface Addable<T> { void add(T t); }
+
+class Fill2 {
+    // Classtoken version:
+    // 用Addable取代前一节的Collection 
+    public static <T> void fill(Addable<T> addable,
+            Class<? extends T> classToken, int size) {
+        for(int i = 0; i < size; i++)
+            try {
+                addable.add(classToken.newInstance());
+            } catch(Exception e) {
+                throw new RuntimeException(e);
+            }
+    }
+    // Generator version:
+    // 重载的fill，接受一个Generator而不是标记类型。
+    // 编译器将确保传递的是正确的Generator，因此不会抛出任何异常。
+    public static <T> void fill(Addable<T> addable,
+            Generator<T> generator, int size) {
+        for(int i = 0; i < size; i++)
+            addable.add(generator.next());
+    }
+}
+
+// To adapt a base type, you must use composition.
+// Make any Collection Addable using composition:
+// 创建一个Collection的Addable适配器
+class AddableCollectionAdapter<T> implements Addable<T> {
+    private Collection<T> c;
+    public AddableCollectionAdapter(Collection<T> c) {
+        this.c = c;
+    }
+    public void add(T item) { c.add(item); }
+}
+    
+// A Helper to capture the type automatically:
+class Adapter {
+    public static <T>
+    Addable<T> collectionAdapter(Collection<T> c) {
+        return new AddableCollectionAdapter<T>(c);
+    }
+}
+
+// To adapt a specific type, you can use inheritance.
+// Make a SimpleQueue Addable using inheritance:
+class AddableSimpleQueue<T>
+    extends SimpleQueue<T> implements Addable<T> {
+    public void add(T item) { super.add(item); }
+}
+    
+class Fill2Test {
+    public static void main(String[] args) {
+        // Adapt a Collection:
+        List<Coffee> carrier = new ArrayList<Coffee>();
+        // 使用Addable的Collection适配器
+        Fill2.fill(
+                new AddableCollectionAdapter<Coffee>(carrier),
+                Coffee.class, 3);
+        // Helper method captures the type:
+        Fill2.fill(Adapter.collectionAdapter(carrier),
+                Latte.class, 2);
+        for(Coffee c: carrier)
+            System.out.println(c);
+        System.out.println("----------------------");
+        // Use an adapted class:
+        AddableSimpleQueue<Coffee> coffeeQueue =
+                new AddableSimpleQueue<Coffee>();
+        Fill2.fill(coffeeQueue, Mocha.class, 4);
+        Fill2.fill(coffeeQueue, Latte.class, 1);
+        for(Coffee c: coffeeQueue)
+            System.out.println(c);
+    }
+} 
+/* Output:
+Coffee 0
+Coffee 1
+Coffee 2
+Latte 3
+Latte 4
+----------------------
+Mocha 5
+Mocha 6
+Mocha 7
+Mocha 8
+Latte 9
+*///:~
+::<<
+
+
+
+
+18、将函数对象用作策略
+---------------
+
+>>::
+//Different types of function objects:
+// 运算法则：联合
+interface Combiner<T> { T combine(T x, T y); }
+// 单参函数
+interface UnaryFunction<R,T> { R function(T x); }
+// 收集器
+interface Collector<T> extends UnaryFunction<T,T> {
+    T result(); // Extract result of collecting parameter
+}
+// 
+interface UnaryPredicate<T> { boolean test(T x); }
+ 
+class Functional {
+    // 结合seq中的所有对象
+    public static <T> T reduce(Iterable<T> seq, Combiner<T> combiner) {
+        Iterator<T> it = seq.iterator();
+        if(it.hasNext()) {
+            T result = it.next();
+            while(it.hasNext())
+                result = combiner.combine(result, it.next());
+            return result;
+        }
+        // If seq is the empty list:
+        return null; // Or throw exception
+    }
+    // Take a function object and call it on each object in
+    // the list, ignoring the return value. The function
+    // object may act as a collecting parameter, so it is
+    // returned at the end.
+    public static <T> Collector<T> forEach(Iterable<T> seq, Collector<T> func) {
+        for(T t : seq)
+            func.function(t);
+        return func;
+    }
+    // Creates a list of results by calling a
+    // function object for each object in the list:
+    public static <R,T> List<R> transform(Iterable<T> seq, UnaryFunction<R,T> func) {
+        List<R> result = new ArrayList<R>();
+        for(T t : seq)
+            result.add(func.function(t));
+        return result;
+    }
+    // Applies a unary predicate to each item in a sequence,
+    // and returns a list of items that produced "true":
+    public static <T> List<T> filter(Iterable<T> seq, UnaryPredicate<T> pred) {
+        List<T> result = new ArrayList<T>();
+        for(T t : seq)
+            if(pred.test(t))
+                result.add(t);
+        return result;
+    }
+    // To use the above generic methods, we need to create
+    // function objects to adapt to our particular needs:
+    static class IntegerAdder implements Combiner<Integer> {
+        public Integer combine(Integer x, Integer y) {
+            return x + y;
+        }
+    }
+    static class IntegerSubtracter implements Combiner<Integer> {
+        public Integer combine(Integer x, Integer y) {
+            return x - y;
+        }
+    }
+    static class BigDecimalAdder implements Combiner<BigDecimal> {
+        public BigDecimal combine(BigDecimal x, BigDecimal y) {
+            return x.add(y);
+        }
+    }
+    static class BigIntegerAdder implements Combiner<BigInteger> {
+        public BigInteger combine(BigInteger x, BigInteger y) {
+            return x.add(y);
+        }
+    }
+    static class AtomicLongAdder implements Combiner<AtomicLong> {
+        public AtomicLong combine(AtomicLong x, AtomicLong y) {
+            // Not clear whether this is meaningful:
+            return new AtomicLong(x.addAndGet(y.get()));
+        }
+    }
+    // We can even make a UnaryFunction with an "ulp"
+    // (Units in the last place):
+    static class BigDecimalUlp implements UnaryFunction<BigDecimal,BigDecimal> {
+        public BigDecimal function(BigDecimal x) {
+            return x.ulp();
+        }
+    }
+    static class GreaterThan<T extends Comparable<T>> implements UnaryPredicate<T> {
+        private T bound;
+        public GreaterThan(T bound) { this.bound = bound; }
+        public boolean test(T x) {
+            return x.compareTo(bound) > 0;
+        }
+    }
+    static class MultiplyingIntegerCollector implements Collector<Integer> {
+        private Integer val = 1;
+        public Integer function(Integer x) {
+            val *= x;
+            return val;
+        }
+        public Integer result() { return val; }
+    }
+    public static void main(String[] args) {
+        // Generics, varargs & boxing working together:
+        List<Integer> li = Arrays.asList(1, 2, 3, 4, 5, 6, 7);
+        Integer result = reduce(li, new IntegerAdder());
+        System.out.println(result);
+
+        result = reduce(li, new IntegerSubtracter());
+        System.out.println(result);
+
+        System.out.println(filter(li, new GreaterThan<Integer>(4)));
+
+        System.out.println(forEach(li,
+                new MultiplyingIntegerCollector()).result());
+
+        System.out.println(forEach(filter(li, new GreaterThan<Integer>(4)),
+                new MultiplyingIntegerCollector()).result());
+
+        MathContext mc = new MathContext(7);
+        List<BigDecimal> lbd = Arrays.asList(
+                new BigDecimal(1.1, mc), new BigDecimal(2.2, mc),
+                new BigDecimal(3.3, mc), new BigDecimal(4.4, mc));
+        BigDecimal rbd = reduce(lbd, new BigDecimalAdder());
+        System.out.println(rbd);
+
+        System.out.println(filter(lbd,
+                new GreaterThan<BigDecimal>(new BigDecimal(3))));
+
+        // Use the prime-generation facility of BigInteger:
+        List<BigInteger> lbi = new ArrayList<BigInteger>();
+        BigInteger bi = BigInteger.valueOf(11);
+        for(int i = 0; i < 11; i++) {
+            lbi.add(bi);
+            bi = bi.nextProbablePrime();
+        }
+        System.out.println(lbi);
+
+        BigInteger rbi = reduce(lbi, new BigIntegerAdder());
+        System.out.println(rbi);
+        // The sum of this list of primes is also prime:
+        System.out.println(rbi.isProbablePrime(5));
+
+        List<AtomicLong> lal = Arrays.asList(
+                new AtomicLong(11), new AtomicLong(47),
+                new AtomicLong(74), new AtomicLong(133));
+        AtomicLong ral = reduce(lal, new AtomicLongAdder());
+        System.out.println(ral);
+
+        System.out.println(transform(lbd,new BigDecimalUlp()));
+    }
+} 
+/* Output:
+28
+-26
+[5, 6, 7]
+5040
+210
+11.000000
+[3.300000, 4.400000]
+[11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47]
+311
+true
+265
+[0.000001, 0.000001, 0.000001, 0.000001]
+*///:~
+::<<
