@@ -158,7 +158,7 @@ class Countries {
     private static class FlyweightMap extends AbstractMap<String,String> {
       // 需要定制的Map.Entry类，这正是享元的部分，每个Map.Entry对象都只存储了它的索引，而不是实际的键和值，当你调用getKey()he getValue()时，他们会使用该索引来返回恰当的DATA元素。
       // EntrySet可以确保它的size不会大于DATA
-        // TODO: 先了解享元
+        // TODO: 先了解享元模式，不要写流水账笔记了，写点有独特见解的笔记
       private static class Entry implements Map.Entry<String,String> {
         int index;
         Entry(int index) { this.index = index; }
