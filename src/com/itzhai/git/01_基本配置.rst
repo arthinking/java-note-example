@@ -1,0 +1,10 @@
+提交代码的log里面会显示提交者的信息
+-------------------------
+.. code:: c
+git config --global user.name [username]
+git config --global user.email [email]
+
+在git命令中开启颜色显示
+----------------
+.. code:: c
+git config --global color.ui true
